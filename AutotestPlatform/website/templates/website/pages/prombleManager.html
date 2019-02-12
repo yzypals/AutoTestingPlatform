@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    {% load staticfiles %}
+    <!--引入JQuery-->
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery-3.2.1.min.js' %}"></script> 
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery.easyui.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'website/js/common.js' %}"></script>         
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/locale/easyui-lang-zh_CN.js' %}"></script> 
+    <link rel="stylesheet" type="text/css" href="{% static  'website/jquery-easyui/themes/default/easyui.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'website/jquery-easyui/themes/icon.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'website/jquery-easyui/demo/demo.css' %}">
+    <script>
+        var ifInsert = undefined; // 用于标记行是否是新增还是修改
+        var editIndex = undefined;     // 用于存储正在编辑行的索引
+ 
+        var prombleID = undefined;     // 用于存放问题ID
+
+        // 用于存储记录行中处于编辑，还未保存的值
+        var desc = undefined; //  问题描述
+        var status = undefined; // 问题状态
+        var issuer = undefined;  //问题发起人
+        var tracer = undefined;  //问题跟进人
+        var handler = undefined; //问题处理人
+        var mark = undefined; // 备注
+  
+        function onLoadSuccess(data) {
+            // 修改“操作”列的按钮样式
+            if (data) {
+                for (var i=0; i<data.rows.length; i++){
+                    if (data.rows[i].status == '待跟进') {
+                        $('#closeBtn' + i).hide();
+                        $('#reOpenBtn' + i).hide();
+                        $('#traceBtn' + i).linkbutton({text:'跟进', plain:true, iconCls:'icon-edit', width:'54px'}); 
+                        $('#traceBtn' + i).show();
+                    } else if(data.rows[i].status == '跟进中'){  
+                        $('#traceBtn' + i).hide();
+                        $('#reOpenBtn' + i).hide();
+                        $('#closeBtn' + i).linkbutton({text:'关闭', plain:true, iconCls:'icon-edit', width:'54px'});
+                        $('#closeBtn' + i).show();
+                    } else if(data.rows[i].status == '已解决'){
+                        $('#traceBtn' + i).hide();
+                        $('#closeBtn' + i).hide();
+                        $('#reOpenBtn' + i).linkbutton({text:'激活', plain:true, iconCls:'icon-edit', width:'54px'});
+                        $('#reOpenBtn' + i).show();
+                    }
+                }              
+            }
+            
+            $('.editRowBtn').linkbutton({text:'修改', plain:true, iconCls:'icon-edit', width:'54px'});
+            $('.deleteRowBtn').linkbutton({text:'删除', plain:true, iconCls:'icon-remove', width:'54px'});
+            $('.moveUpBtn').linkbutton({text:'上移', plain:true, iconCls:'icon-edit', width:'54px'});
+            $('.moveDownBtn').linkbutton({text:'下移', plain:true, iconCls:'icon-edit', width:'54px'});
+            $('.saveRowBtn').hide();
+            $('.cancelEditRowBtn').hide(); 
+       
+         
+            editIndex = undefined;
+            // 设置自动调整行高(主要是解决行号所在单元格和数据行错位问题)
+            $('#Promble_feedback').datagrid('fixRowHeight');
+        }
+
+        // 编辑时隐藏部分按钮
+        function hideNoneEditBtn(editIndex) {
+            $('#editRowBtn' + editIndex).hide();
+            $('#deleteRowBtn' + editIndex).hide();
+            $('#moveUpBtn' + editIndex).hide();
+            $('#moveDownBtn' + editIndex).hide();
+            $('.saveRowBtn').linkbutton({text:'保存', plain:true, iconCls:'icon-ok'});
+            $('.cancelEditRowBtn').linkbutton({text:'取消', plain:true, iconCls:'icon-cancel'});
+            $('#saveRowBtn' + editIndex).show();
+            $('#cancelEditRowBtn' + editIndex).show();
+            $('#traceBtn' + editIndex).hide();
+            $('#closeBtn' + editIndex).hide();
+            $('#reOpenBtn' + editIndex).hide();
+        }
+
+        
+        // 格式化【操作】列
+        function formatOperationColumn(value,row,index){
+            var btn = "<a id='traceBtn" + index + "' class='traceBtn' onclick='handlePromble("+row.id +","+index+", this)' href='javascript:void(0)'>跟进</a> \
+                <a id='closeBtn" + index + "' class='closeBtn' onclick='handlePromble("+row.id +","+index+", this)' \
+                href='javascript:void(0)' style='display:none'>关闭</a>\
+                <a id='reOpenBtn" + index + "' class='reOpenBtn' onclick='handlePromble("+row.id +","+index+", this)' \
+                href='javascript:void(0)' style='display:none'>激活</a>\
+                <a id='editRowBtn" + index + "' class='editRowBtn' onclick='editRow(" + row.id +"," + index+")' \
+                href='javascript:void(0)'>修改</a>\
+                <a id='deleteRowBtn" + index + "' class='deleteRowBtn' onclick='removeRow(\"Promble_feedback\","  + row.id +"," + index+")' href='javascript:void(0)'>删除</a>\
+                <a id='moveUpBtn" + index + "' class='moveUpBtn' onclick='moveRow(\"Promble_feedback\"," + index+", this)' href='javascript:void(0)'>上移</a> \
+                <a id='moveDownBtn" + index + "' class='moveDownBtn' onclick='moveRow(\"Promble_feedback\"," + index+", this)' href='javascript:void(0)'>下移</a> \
+                <a id='saveRowBtn" + index + "' class='saveRowBtn' onclick='saveRow()' href='javascript:void(0)' style='display:none'>保存</a>\
+                <a id='cancelEditRowBtn" + index + "' class='cancelEditRowBtn' onclick='cancelEditRow(this)' href='javascript:void(0)' style='display:none'>取消</a>";
+                return btn;
+        }
+        
+
+        // 点击“新增”按钮事件函数实现
+        function insertRow(rowID, index) { 
+            if (endEditing()) { 
+                editIndex = 0;                                 
+                $('#Promble_feedback').datagrid('insertRow',{
+                    index: editIndex, 
+                    row: { }
+                });
+
+                hideNoneEditBtn(editIndex);
+            
+                $('#Promble_feedback').datagrid('unselectAll');  
+                var row = $('#Promble_feedback').datagrid('selectRow', editIndex);
+                $(row).datagrid('beginEdit', editIndex);
+                ifInsert = true;
+            }                
+        }
+
+      
+        // 点击 保存 按钮的函数实现
+        function saveRow(){
+            if (editIndex == undefined) {
+                $.messager.alert('提示', '操作失败，没有正在编辑的记录', 'info');
+                return;
+            } 
+            if ($('#Promble_feedback').datagrid('validateRow', editIndex)){
+                $('#Promble_feedback').datagrid('endEdit', editIndex);
+      
+                if (desc == '') {
+                    $.messager.alert('提示','保存失败，问题描述不能为空', 'warnging');
+                    ifInsert = undefined;
+                    editIndex = undefined;
+                    onLoadSuccess();
+                    $('#Promble_feedback').datagrid('reload');
+                    return;              
+                } 
+
+                if (ifInsert == true) { // 新增
+                    var url = '/action/addPromble';
+                    var params = {   
+                        desc:desc,
+                        issuer:issuer,
+                        tracer:tracer, 
+                        handler:handler,
+                        mark:mark
+                    };
+                } else if (ifInsert == false) { // 修改
+                    var url = '/action/updatePromble';
+                    var params = {
+                        id:prombleID,
+                        desc:desc,
+                        issuer:issuer,
+                        tracer:tracer, 
+                        handler:handler,
+                        mark:mark
+                    };
+                }
+
+                $.post(url, params, function(data,status){
+                        if (data == 'success') {
+                            $.messager.alert('提示','保存成功', 'info');
+                        } else {
+                            $.messager.alert('错误', '保存失败: ' + data, 'error');
+                        }
+                        $('#Promble_feedback').datagrid('reload');        
+                    }
+                ); 
+            } else {
+                $.messager.alert('告警', '保存失败,请检查填写项是否合法', 'error');
+                $('#Promble_feedback').datagrid('reload');
+            }
+
+            ifInsert = undefined;
+            editIndex = undefined; 
+            onLoadSuccess();
+        }
+
+        // 点击 取消 按钮的函数实现
+        function cancelEditRow() {
+            if (editIndex == undefined) {
+                $.messager.alert('提示', '操作失败，没有正在编辑的记录', 'info');
+                return;
+            } 
+            $('#Promble_feedback').datagrid('endEdit', editIndex);             
+            $('#Promble_feedback').datagrid('reload', editIndex);
+         
+            ifInsert = undefined;
+            editIndex = undefined;
+            onLoadSuccess();                       
+        }
+ 
+          // 结束编辑
+        function endEditing(){
+            if (editIndex == undefined) {
+                return true;
+            } else {
+                $.messager.alert('提示', '您还有记录未保存', 'warnging');
+                return false;
+            }
+        }
+
+        // 结束编辑时自动触发的事件函数实现
+        function onEndEdit(index, row) {
+            // 获取单元格中输入的内容
+            desc = $(this).datagrid('getEditor', {index: index,field: 'desc'}).target.val();
+            issuer = $(this).datagrid('getEditor', {index: index,field: 'issuer'}).target.val();
+            tracer = $(this).datagrid('getEditor', {index: index,field: 'tracer'}).target.val();
+            handler = $(this).datagrid('getEditor', {index: index,field: 'handler'}).target.val();
+            mark = $(this).datagrid('getEditor', {index: index,field: 'mark'}).target.val();
+        }
+
+        // 点击表格 修改 按钮的函数实现
+        function editRow(rowID, index){     
+            if (endEditing()) { 
+                if (index == undefined) { // 点击表格上方的 修改 按钮
+                    //获取选中行的数据  
+                    var rowsSelected = $('#Promble_feedback').datagrid('getSelections');
+                    if (rowsSelected.length < 1) {  //如果没有选中行，提示信息  
+                        $.messager.alert("提示消息", "请选择要修改的记录！", 'info');  
+                        return;  
+                    } else if (rowsSelected.length > 1) {
+                        $.messager.alert("提示信息", "每次只能选择一条记录！", 'info');
+                        return;
+                    }
+                    editIndex = $('#Promble_feedback').datagrid('getRowIndex', rowsSelected[0]);
+                    prombleID = rowsSelected[0].id;
+                } else { // 点击记录行所在的 修改 按钮
+                    prombleID = rowID;
+                    editIndex = index;
+                }
+                hideNoneEditBtn(editIndex);  
+
+                $('#Promble_feedback').datagrid('unselectAll');           
+                var row = $('#Promble_feedback').datagrid('selectRow', editIndex);
+                $(row).datagrid('beginEdit', editIndex);
+                ifInsert = false;                
+            }  
+        }
+            
+
+        // 样式设置
+        function rowStyler(value,row,index){
+            if (row['status'] == '已解决') {
+                return 'background-color:lightgrey;';
+            } 
+        } 
+   
+
+    function handlePromble(rowID, index, btn) {
+        if ($.trim($(btn).text()) == '跟进') {
+            $.messager.confirm("确认消息", "确定开始跟进吗？", function (confirm) {  
+                if (confirm) {
+                    $.post('/action/handlePromble', {
+                        rowID:rowID,
+                        opType:'跟进'
+                    },
+                    function(data, status){
+                        if (data == 'success') {
+                            $(btn).hide();
+                            $('#closeBtn' + index).linkbutton({text:'关闭', plain:true, iconCls:'icon-edit', width:'54px'}); 
+                            $('#closeBtn' + index).show();  
+                            $.messager.alert('提示', '执行成功', 'info');
+                            $('#Promble_feedback').datagrid('reload');   
+                        } else {
+                            $.messager.alert('提示', '执行失败: ' + data, 'error');
+                        }
+
+                    });
+                }
+            });
+        } else if($.trim($(btn).text()) == '关闭') {
+            $.messager.confirm("确认消息", "确定要关闭么？", function (confirm) {  
+                if (confirm) {
+                    $.post('/action/handlePromble', {
+                        rowID:rowID,
+                        opType:'关闭'
+                    },function(data, status){
+                        if (data == 'success') {
+                            $(btn).hide();
+                            $('#reOpenBtn' + index).linkbutton({text:'激活', plain:true, iconCls:'icon-edit', width:'54px'}); 
+                            $('#reOpenBtn' + index).show();
+                            $.messager.alert('提示', '执行成功', 'info');
+                            $('#Promble_feedback').datagrid('reload');                      
+                        } else {
+                            $.messager.alert('提示', '执行失败: ' + data, 'error');
+
+                        }
+                    });
+                }
+            });
+        } else if($.trim($(btn).text()) == '激活') {
+            $.messager.confirm("确认消息", "确定要激活么？", function (confirm) {  
+                if (confirm) {
+                    $.post('/action/handlePromble', {
+                        rowID:rowID,
+                        opType:'激活'
+                    },function(data, status){
+                        if (data == 'success') {
+                            $(btn).hide(); 
+                            $('#traceBtn' + index).linkbutton({text:'跟进', plain:true, iconCls:'icon-edit', width:'54px'}); 
+                            $('#traceBtn' + index).show();
+                            $.messager.alert('提示', '执行成功', 'info');
+                            $('#Promble_feedback').datagrid('reload');   
+                        } else {
+                            $.messager.alert('提示', '激活失败: ' + data, 'error');
+                        }
+
+                    });
+                }
+            });
+        }
+    }
+
+    $('#Promble_feedback').datagrid('reload');   
+    </script>
+</head>
+<body>
+    <!--项目配置名称列表-->
+    <table class="easyui-datagrid" rownumbers="true" pagination="true" id="Promble_feedback"
+        data-options="border:false,
+        singleSelect:false,
+        fit:true,
+        nowrap: false,
+        collapsible: true,
+        toolbar: toolbar, 
+        rownumbers: true,
+        rowStyler:rowStyler,
+        url: '/action/loadPrombles',
+        method: 'get',
+        onEndEdit:onEndEdit,
+        pageSize: 25,    
+        pageList: [25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100], 
+        onLoadSuccess:onLoadSuccess">
+        <thead>
+            <tr>
+                <th data-options="field:'ck',checkbox:true, fitColumns:true"></th>
+                <th data-options="field:'id', align: 'center', fitColumns:true">ID</th>
+                <th data-options="field:'desc', align: 'left',editor:{type:'text'}" width="300px">问题描述</th>
+                <th data-options="field:'status', align: 'center'" width="50px">状态</th>              
+                <th data-options="field:'issuer', align:'center',editor:{type:'text'}" width="65px">发起人</th>
+                <th data-options="field:'tracer', align: 'center', editor:{type:'text'}" width="65px">跟进人</th>
+                <th data-options="field:'handler', align: 'center', editor:{type:'text'}" width="65px">处理人</th>
+                <th data-options="field:'record_time', align: 'center', formatter:formatDatebox" width="90px">录入时间</th>               
+                <th data-options="field:'start_trace_time', align: 'center', formatter:formatDatebox" width="90px">跟进时间</th>                 
+                <th data-options="field:'solved_time', align: 'center', formatter:formatDatebox" width="90px">完成时间</th> 
+                <th data-options="field:'mark', align: 'left', editor:{type:'text'}" width="300px">备注</th>
+                <th data-options="field:'order', align: 'center', fitColumns:true">顺序</th> 
+                <th data-options="field:'operation',title:'操作', align: 'left', formatter:function(value,row,index){
+                    return formatOperationColumn(value,row,index);}"  width='300px'>操作</th>                
+            </tr>
+            </thead>  
+    </table>
+   
+    <!--增加工具条-->
+    <script type="text/javascript">
+        // 定义工具栏
+        var toolbar = addToolbar('Promble_feedback'); 
+    </script>
+</body>
+</html>

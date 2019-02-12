@@ -1,0 +1,120 @@
+接口请求方式及URL:
+GET /action/getDateAndTime
+
+输出：
+{
+"dic":
+	{
+	"curtime":{"curtime":"value"},
+	"today_yyyy_mm_dd":{"today_yyyy_mm_dd":"value"},
+	"today_yyyymmdd":{"today_yyyymmdd":"value"},
+	"yesterday_yyyy_mm_dd":{"yesterday_yyyy_mm_dd":"value"},	
+	"yesterday_yyyymmdd":{"yesterday_yyyymmdd":"value"},
+	"curmonth_first_day_yyyymmdd":{"curmonth_first_day_yyyymmdd":"value"},	
+	"curmonth_first_day_yyyy_mm_dd":{"curmonth_first_day_yyyy_mm_dd":"value"},	
+	"next_month_first_day_yyyymmdd":{"next_month_first_day_yyyymmdd":"value"},	
+	"next_month_first_day_yyyy_mm_dd":{"next_month_first_day_yyyy_mm_dd":"value"},	
+	"last_month_first_day_yyyy_mm_dd":{"last_month_first_day_yyyy_mm_dd":"value"},	
+	"last_month_first_day_yyyymmdd":{"last_month_first_day_yyyymmdd":"value"},	
+	"curmonth_final_day_yyyymmdd":{"curmonth_final_day_yyyymmdd":"value"},	
+	"curmonth_final_day_yyyy_mm_dd":{"curmonth_final_day_yyyy_mm_dd":"value"},	
+	"last_month_final_day_yyyymmdd":{"last_month_final_day_yyyymmdd":"value"},	
+	"last_month_final_day_yyyy_mm_dd":{"last_month_final_day_yyyy_mm_dd":"value"},	
+	"recent_7day_range_yyyymmdd":{"recent_7day_range_yyyymmdd":"value"},	
+	"recent_7day_range_yyyy_mm_dd":{"recent_7day_range_yyyy_mm_dd":"value"},	
+	"recent_30day_range_yyyy_mm_dd":{"recent_30day_range_yyyy_mm_dd":"value"},	
+	"recent_30day_range_yyyymmdd":{"recent_30day_range_yyyymmdd":"value"},	
+	"curmonth_range_yyyymmdd":{"curmonth_range_yyyymmdd":"value"},	
+	"curmonth_range_yyyy_mm_dd":{"curmonth_range_yyyy_mm_dd":"value"},	
+	"lastmonth_range_yyyymmdd":{"lastmonth_range_yyyymmdd":"value"},	
+	"lastmonth_range_yyyy_mm_dd":{"lastmonth_range_yyyy_mm_dd":"value"},	
+	"current_month_yyyy_mm":{"current_month_yyyy_mm":"value"},	
+	"current_month_yyyymm":{"current_month_yyyymm":"value"},	
+	"last_month_yyyy_mm":{"last_month_yyyy_mm":"value"},	
+	"last_month_yyyymm":{"last_month_yyyymm":"value"},	
+	"current_month_last_year_yyyy_mm":{"current_month_last_year_yyyy_mm":"value"},	
+	"current_month_last_year_yyyymm":{"current_month_last_year_yyyymm":"value"},	
+	"december_month_last_year_yyyy_mm":{"december_month_last_year_yyyy_mm":"value"},	
+	"december_month_last_year_yyyymm":{"december_month_last_year_yyyymm":"value"},	
+	"current_week_num_yyyymm":{"current_week_num_yyyymm":"value"},	
+	"current_week_num_yyyy_mm":{"current_week_num_yyyy_mm":"value"},	
+	"last_week_num_yyyyno":{"last_week_num_yyyyno":"value"},
+	"millisecond_for_curtime":{"millisecond_for_curtime":"value"},	
+	"millisecond_for_curdate":{"millisecond_for_curdate":"value"},	
+	"millisecond_for_yesterday":{"millisecond_for_yesterday":"value"},	
+	"weekday1_yyyymmdd":{"weekday1_yyyymmdd":"value"},	
+	"weekday1_yyyy_mm_dd":{"weekday1_yyyy_mm_dd":"value"},	
+	"weekday7_yyyymmdd":{"weekday7_yyyymmdd":"value"},	
+	"weekday7_yyyy_mm_dd":{"weekday7_yyyy_mm_dd":"value"},	
+	"last_weekday1_yyyymmdd":{"last_weekday1_yyyymmdd":"value"},	
+	"last_weekday1_yyyy_mm_dd":{"last_weekday1_yyyy_mm_dd":"value"},
+	"last_weekday7_yyyymmdd":{"last_weekday7_yyyymmdd":"value"},	
+	"last_weekday7_yyyy_mm_dd":{"last_weekday7_yyyy_mm_dd":"value"},	
+	"weekday1_to_weekday7_yyyymmdd":{"weekday1_to_weekday7_yyyymmdd":"value"},	
+	"weekday1_to_weekday7_yyyy_mm_dd":{"weekday1_to_weekday7_yyyy_mm_dd":"value"},	
+	"last_weekday1_to_weekday7_yyyymmdd":{"last_weekday1_to_weekday7_yyyymmdd":"value"},	
+	"last_weekday1_to_weekday7_yyyy_mm_dd":{"last_weekday1_to_weekday7_yyyy_mm_dd":"value"},		
+	"pre_weekday1_yyyymmdd":{"pre_weekday1_yyyymmdd":"value"},	
+	"pre_weekday1_yyyy_mm_dd":{"pre_weekday1_yyyy_mm_dd":"value"},	
+	"pre_weekday7_yyyymmdd":{"pre_weekday7_yyyymmdd":"value"},	
+	"pre_weekday7_yyyy_mm_dd":{"pre_weekday7_yyyy_mm_dd":"value"}
+	}
+}
+
+含义说明：
+{
+        "curtime":curtime,															    #当前时间curtime：2018-03-19 15:08:15
+        "today_yyyy_mm_dd":today_yyyy_mm_dd,										    #当前日期today_yyyy_mm_dd：2018-03-19
+        "today_yyyymmdd":today_yyyymmdd,											    #当前日期today_yyyymmdd：20180319
+        "yesterday_yyyy_mm_dd":yesterday_yyyy_mm_dd,								    #昨日yesterday_yyyy_mm_dd：2018-03-18
+        "yesterday_yyyymmdd":yesterday_yyyymmdd,								    	#昨日yesterday_yyyymmdd：20180318
+        "curmonth_first_day_yyyymmdd":curmonth_first_day_yyyymmdd,						#当月1号curmonth_first_day_yyyymmdd：20180301
+        "curmonth_first_day_yyyy_mm_dd":curmonth_first_day_yyyy_mm_dd,					#当月1号curmonth_first_day_yyyy_mm_dd：2018-03-01
+        "next_month_first_day_yyyymmdd":next_month_first_day_yyyymmdd,					#下月1号next_month_first_day_yyyymmdd：20180401
+        "next_month_first_day_yyyy_mm_dd":next_month_first_day_yyyy_mm_dd,				#下月1号next_month_first_day_yyyy_mm_dd：2018-04-01
+        "last_month_first_day_yyyy_mm_dd":last_month_first_day_yyyy_mm_dd,				#上月1号last_month_first_day_yyyy_mm_dd：2018-02-01
+        "last_month_first_day_yyyymmdd":last_month_first_day_yyyymmdd,					#上月1号last_month_first_day_yyyymmdd：20180201
+        "curmonth_final_day_yyyymmdd":curmonth_final_day_yyyymmdd,						#当月月末curmonth_final_day_yyyymmdd：20180331
+        "curmonth_final_day_yyyy_mm_dd":curmonth_final_day_yyyy_mm_dd,					#当月月末curmonth_final_day_yyyy_mm_dd：2018-03-31
+        "last_month_final_day_yyyymmdd":last_month_final_day_yyyymmdd,					#上月月末last_month_final_day_yyyymmdd：20180228
+        "last_month_final_day_yyyy_mm_dd":last_month_final_day_yyyy_mm_dd,				#上月月末last_month_final_day_yyyy_mm_dd：2018-02-28
+        "recent_7day_range_yyyymmdd":recent_7day_range_yyyymmdd,						#最近7天recent_7day_range_yyyymmdd：20180312-20180318
+        "recent_7day_range_yyyy_mm_dd":recent_7day_range_yyyy_mm_dd,					#最近7天recent_7day_range_yyyy_mm_dd：2018-03-12-2018-03-18
+        "recent_30day_range_yyyy_mm_dd":recent_30day_range_yyyy_mm_dd,					#最近30天recent_30day_range_yyyy_mm_dd：20180217-20180318
+        "recent_30day_range_yyyymmdd":recent_30day_range_yyyymmdd,						#最近30天recent_30day_range_yyyymmdd：2018-02-17-2018-03-18
+        "curmonth_range_yyyymmdd":curmonth_range_yyyymmdd,      						#当月月初-月末curmonth_range_yyyymmdd：20180301-20180331
+        "curmonth_range_yyyy_mm_dd":curmonth_range_yyyy_mm_dd,							#当月月初-月末curmonth_range_yyyy_mm_dd：2018-03-01-2018-03-31
+        "lastmonth_range_yyyymmdd":lastmonth_range_yyyymmdd,							#上月月初-月末lastmonth_range_yyyymmdd：20180301-20180331
+        "lastmonth_range_yyyy_mm_dd":lastmonth_range_yyyy_mm_dd,						#上月月初-月末lastmonth_range_yyyymmdd：2018-03-01-2018-03-31
+        "current_month_yyyy_mm":current_month_yyyy_mm,      							#当年当月current_month_yyyy_mm：2018-03
+        "current_month_yyyymm":current_month_yyyymm,        						    #当年当月current_month_yyyymm：201803
+        "last_month_yyyy_mm":last_month_yyyy_mm,            						    #当年上月last_month_yyyy_mm：2018-02
+        "last_month_yyyymm":last_month_yyyymm,              						    #当年上月last_month_yyyymm：201802
+        "current_month_last_year_yyyy_mm":current_month_last_year_yyyy_mm,				#去年当月current_month_last_year_yyyy_mm：2017-03
+        "current_month_last_year_yyyymm":current_month_last_year_yyyymm,            	#去年当月current_month_last_year_yyyymm：201703
+        "december_month_last_year_yyyy_mm":december_month_last_year_yyyy_mm,			#去年12月december_month_last_year_yyyy_mm：2017-12
+        "december_month_last_year_yyyymm":december_month_last_year_yyyymm,				#去年12月december_month_last_year_yyyymm：201712
+        "current_week_num_yyyymm":current_week_num_yyyymm,  							#本周属于第几周current_week_num_yyyymm：201812
+        "current_week_num_yyyy_mm":current_week_num_yyyy_mm,   							#本周属于第几周current_week_num_yyyymm：2018-12
+		"last_week_num_yyyyno":last_week_num_yyyyno,                                    #上周是第几周last_week_num_yyyyno：201811
+        "millisecond_for_curtime":millisecond_for_curtime,  							#当前本地时间对应的时间戳millisecond_for_curtime：1521443295000
+        "millisecond_for_curdate":millisecond_for_curdate,  							#当前本地日期对应的时间戳millisecond_for_curdate：1521388800000
+        "millisecond_for_yesterday":millisecond_for_yesterday,							#昨日本地日期对应的时间戳millisecond_for_yesterday：1521302400000
+        "weekday1_yyyymmdd":weekday1_yyyymmdd,              						    #本周一weekday1_yyyymmdd：20180319
+        "weekday1_yyyy_mm_dd":weekday1_yyyy_mm_dd,          						    #本周一weekday1_yyyy_mm_dd：20180319
+        "weekday7_yyyymmdd":weekday7_yyyymmdd,              						    #本周日weekday7_yyyymmdd：20180325
+        "weekday7_yyyy_mm_dd":weekday7_yyyy_mm_dd,          						    #本周日weekday7_yyyy_mm_dd：20180325
+        "last_weekday1_yyyymmdd":last_weekday1_yyyymmdd,                                #上周一last_weekday1_yyyymmdd：20180312
+        "last_weekday1_yyyy_mm_dd":last_weekday1_yyyy_mm_dd,                            #上周一last_weekday1_yyyy_mm_dd：2018-03-12		
+        "last_weekday7_yyyymmdd":last_weekday7_yyyymmdd,    						    #上周日last_weekday7_yyyymmdd：20180318
+        "last_weekday7_yyyy_mm_dd":last_weekday7_yyyy_mm_dd,						    #上周日last_weekday7_yyyy_mm_dd：2018-03-18
+        "weekday1_to_weekday7_yyyymmdd":weekday1_to_weekday7_yyyymmdd,                  #本周一到本周日weekday1_to_weekday7_yyyymmdd：20180319-20180325
+        "weekday1_to_weekday7_yyyy_mm_dd":weekday1_to_weekday7_yyyy_mm_dd,              #本周一到本周日weekday1_to_weekday7_yyyy_mm_dd：20180319-20180325
+        "last_weekday1_to_weekday7_yyyymmdd":last_weekday1_to_weekday7_yyyymmdd,        #上周一到上周日last_weekday1_to_weekday7_yyyymmdd：20180312-20180318
+        "last_weekday1_to_weekday7_yyyymmdd":last_weekday1_to_weekday7_yyyy_mm_dd,      #上周一到上周日last_weekday1_to_weekday7_yyyy_mm_dd：2018-03-12-2018-03-18
+        "pre_weekday1_yyyymmdd":pre_weekday1_yyyymmdd,      						    #上周、上上周周一pre_weekday1_yyyymmdd：20180305（# 如果当前日期为周日，则为上周周一，否则上上周一）
+        "pre_weekday1_yyyy_mm_dd":pre_weekday1_yyyy_mm_dd,       					    #上周、上上周周一pre_weekday1_yyyy_mm_dd：2018-03-05
+        "pre_weekday7_yyyymmdd":pre_weekday7_yyyymmdd,      						    #上周、上上周周日pre_weekday7_yyyymmdd：20180311（# 如果当前日期为周日，则为上周周日，否则上上周日）
+        "pre_weekday7_yyyy_mm_dd":pre_weekday7_yyyy_mm_dd   						    #上周、上上周周日pre_weekday7_yyyy_mm_dd：2018-03-11
+
+}

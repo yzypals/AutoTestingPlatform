@@ -1,0 +1,307 @@
+关于xpath查找XML元素的一点总结
+
+
+python 3.4.0
+
+假设服务器返回以下内容：
+<soap:Envelope xmlns="http://www.examp.com"  xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" > 
+    <node2> 
+        <id>goods1</id> 
+    </node2>     
+    <ns1:Body xmlns:ns1="http://service.rpt.data.platform.ddt.sf.com/"> 
+        <ns2:selectByPrimaryKeyResponse  xmlns:ns2="http://service.rpt.data.platform.ddt.sf2.com/"   
+                xmlns="http://www.overide_first_defaul_xmlns.com">   
+            <return> 
+                <copeWith>1.00</copeWith> 
+                <discount>0.99</discount> 
+                <id>144</id> 
+                <invoice>2</invoice> 
+                <invoiceType></invoiceType> 
+                <orderCode>DDT201704071952057186</orderCode> 
+                <orderDate>2017-04-07 19:52:06.0</orderDate> 
+                <paid>0.01</paid> 
+                <payType>pc</payType> 
+                <productName>快递包</productName> 
+                <state>0</state> 
+                <userId>2</userId> 
+            </return> 
+            <return> 
+                <copeWith>2.00</copeWith> 
+                <discount>0.99</discount> 
+                <id>143</id> 
+                <invoice>2</invoice> 
+                <invoiceType></invoiceType> 
+                <orderCode>DDT201704071951065731</orderCode> 
+                <orderDate>2017-04-07 19:51:07.0</orderDate>  
+                <paid>0.01</paid> 
+                <payType>pc</payType> 
+                <productName>快递包</productName> 
+                <state>0</state> 
+                <userId>2</userId> 
+            </return> 
+            <return> 
+                <copeWith>3.00</copeWith> 
+                <discount>0.99</discount> 
+                <id>142</id> 
+                <invoice>2</invoice> 
+                <invoiceType></invoiceType> 
+                <orderCode>DDT201704071945408575</orderCode> 
+                <orderDate>2017-04-07 19:45:40.0</orderDate> 
+                <paid>0.01</paid> 
+                <payType>pc</payType> 
+                <productName>快递包</productName> 
+                <state>0</state> 
+                <userId>2</userId> 
+            </return>             
+            <return attr="re"> 
+                 <copeWith>4.00</copeWith> 
+                <copeWith>5.00</copeWith> 
+                <discount>0.99</discount> 
+                <id>141</id> 
+                <invoice>1</invoice> 
+                <invoiceType>增值税普通发票</invoiceType> 
+                <orderCode>DDT201704071845403738</orderCode> 
+                <orderDate>2017-04-07 18:45:41.0</orderDate> 
+                <paid>0.01</paid> 
+                <productName>快递包</productName> 
+                <state>0</state> 
+                <userId attr="testattr">2</userId> 
+            </return> 
+        </ns2:selectByPrimaryKeyResponse> 
+    </ns1:Body> 
+    <ns1:Body xmlns:ns1="http://service.rpt.data.platform.ddt.sf.com/"> 
+        <ns2:selectByPrimaryKeyResponse  xmlns:ns2="http://service.rpt.data.platform.ddt.sf2.com/">  
+        </ns2:selectByPrimaryKeyResponse> 
+        <ns2:selectByPrimaryKeyResponse  xmlns:ns2="http://service.rpt.data.platform.ddt.sf2.com/">  
+        </ns2:selectByPrimaryKeyResponse> 
+    </ns1:Body> 
+</soap:Envelope>
+
+
+
+实验结果
+以下为xpath设置不同值时的查找结果
+/node
+查找结果：报错，不能使用绝对路径
+
+./node2
+查找结果：找不到元素
+
+./Body
+查找结果：找不到元素
+
+./ns1:Body/selectByPrimaryKeyResponse
+查找结果：找不到元素
+
+./ns1:Body/ns2:selectByPrimaryKeyResponse/return
+查找结果：找不到元素
+
+./ns1:Body/ns2:selectByPrimaryKeyResponse/xmlns:return[1]/copeWith
+查找结果：找不到元素
+
+-----------------------------
+.
+查找结果：根元素，即Envelope元素
+
+ns1:Body
+查找结果：所有名称空间为ns1的Body元素
+
+./ns1:Body
+查找结果：等同ns1:Body
+
+./ns1:Body/ns2:selectByPrimaryKeyResponse
+
+查找结果：所有名称空间为ns1的Body元素下的所有名为selectByPrimaryKeyResponse的子元素
+
+./ns1:Body/ns2:selectByPrimaryKeyResponse[2]
+查找结果：所有名称空间为ns1的Body元素下，名称空间为ns2的第2个名为selectByPrimaryKeyResponse的子元素
+
+./ns1:Body/ns2:selectByPrimaryKeyResponse/xmlns:return
+查找结果：所有名称空间为ns1的Body元素下，所有名称空间为ns2,名称为selectByPrimaryKeyResponse的子元素下，所有名称空间定义为 http://www.overide_first_defaul_xmlns.com的return元素
+
+./ns1:Body/ns2:selectByPrimaryKeyResponse/xmlns:return[1]/xmlns:copeWith
+查找结果：所有名称空间为ns1的Body元素下，所有名称空间为ns2,名称为selectByPrimaryKeyResponse的子元素下，第一个名称空间定义为http://www.overide_first_defaul_xmlns.com的return元素下，
+名称空间定义为http://www.overide_first_defaul_xmlns.com的copyWith元素
+
+.//xmlns:copeWith
+查找结果：所有名称空间定义为http://www.overide_first_defaul_xmlns.com的copeWith元素
+
+.//xmlns:copeWith[2]
+查找结果：同一个元素节点下，名称空间定义为http://www.overide_first_defaul_xmlns.com的第二个copeWith元素(例中为 <copeWith>5.00</copeWith> ，注意：这里的数字是针对兄弟节点的，下同，不再赘述)
+
+# 注意：[]里面不支持last()这种谓词，数字可以
+
+
+.//xmlns:return//xmlns:copeWith"
+查找结果：所有名称空间定义为http://www.overide_first_defaul_xmlns.com的return元素下，所有名称空间定义为http://www.overide_first_defaul_xmlns.com的copeWith元素
+
+
+实验2
+
+对比实验1，去掉selectByPrimaryKeyResponse元素中的xmlns定义：
+xmlns="http://www.overide_first_defaul_xmlns.com"
+
+
+假设服务器返回以下内容：
+<soap:Envelope xmlns="http://www.examp.com"  xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" > 
+    <node2> 
+        <id>goods1</id> 
+    </node2>     
+    <ns1:Body xmlns:ns1="http://service.rpt.data.platform.ddt.sf.com/"> 
+        <ns2:selectByPrimaryKeyResponse  xmlns:ns2="http://service.rpt.data.platform.ddt.sf2.com/"   
+                >   
+            <return> 
+                <copeWith>1.00</copeWith> 
+                <discount>0.99</discount> 
+                <id>144</id> 
+                <invoice>2</invoice> 
+                <invoiceType></invoiceType> 
+                <orderCode>DDT201704071952057186</orderCode> 
+                <orderDate>2017-04-07 19:52:06.0</orderDate> 
+                <paid>0.01</paid> 
+                <payType>pc</payType> 
+                <productName>快递包</productName> 
+                <state>0</state> 
+                <userId>2</userId> 
+            </return> 
+            <return> 
+                <copeWith>2.00</copeWith> 
+                <discount>0.99</discount> 
+                <id>143</id> 
+                <invoice>2</invoice> 
+                <invoiceType></invoiceType> 
+                <orderCode>DDT201704071951065731</orderCode> 
+                <orderDate>2017-04-07 19:51:07.0</orderDate>  
+                <paid>0.01</paid> 
+                <payType>pc</payType> 
+                <productName>快递包</productName> 
+                <state>0</state> 
+                <userId>2</userId> 
+            </return> 
+            <return> 
+                <copeWith>3.00</copeWith> 
+                <discount>0.99</discount> 
+                <id>142</id> 
+                <invoice>2</invoice> 
+                <invoiceType></invoiceType> 
+                <orderCode>DDT201704071945408575</orderCode> 
+                <orderDate>2017-04-07 19:45:40.0</orderDate> 
+                <paid>0.01</paid> 
+                <payType>pc</payType> 
+                <productName>快递包</productName> 
+                <state>0</state> 
+                <userId>2</userId> 
+            </return>             
+            <return attr="re"> 
+                 <copeWith>4.00</copeWith> 
+                <copeWith>5.00</copeWith> 
+                <discount>0.99</discount> 
+                <id>141</id> 
+                <invoice>1</invoice> 
+                <invoiceType>增值税普通发票</invoiceType> 
+                <orderCode>DDT201704071845403738</orderCode> 
+                <orderDate>2017-04-07 18:45:41.0</orderDate> 
+                <paid>0.01</paid> 
+                <productName>快递包</productName> 
+                <state>0</state> 
+                <userId attr="testattr">2</userId> 
+            </return> 
+        </ns2:selectByPrimaryKeyResponse> 
+    </ns1:Body> 
+    <ns1:Body xmlns:ns1="http://service.rpt.data.platform.ddt.sf.com/"> 
+        <ns2:selectByPrimaryKeyResponse  xmlns:ns2="http://service.rpt.data.platform.ddt.sf2.com/">  
+        </ns2:selectByPrimaryKeyResponse> 
+        <ns2:selectByPrimaryKeyResponse  xmlns:ns2="http://service.rpt.data.platform.ddt.sf2.com/">  
+        </ns2:selectByPrimaryKeyResponse> 
+    </ns1:Body> 
+</soap:Envelope>
+
+实验结果
+.//xmlns:return//xmlns:copeWith
+查找结果：所有名称空间定义为http://www.examp.com的return元素下，所有名称空间定义为http://www.examp.com的copeWith元素
+
+
+实验3
+
+xpath = "./xmlns:string"
+
+假设服务器返回以下内容：
+    <ArrayOfString xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+       xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://WebXml.com.cn/"> 
+       <string>阿尔及利亚,3320</string> 
+       <string>阿根廷,3522</string> 
+       <string>阿曼,3170</string> 
+       <string>阿塞拜疆,3176</string> 
+       <string>埃及,3317</string> 
+       <string>埃塞俄比亚,3314</string> 
+       <string>爱尔兰,3246</string> 
+       <string>奥地利,3237</string> 
+       <string>澳大利亚,368</string> 
+       <string>巴基斯坦,3169</string> 
+       <string>巴西,3580</string> 
+       <string>保加利亚,3232</string> 
+       <string>比利时,3243</string> 
+    </ArrayOfString>
+
+实验结果：
+./string
+查找结果：找不到元素
+
+./xmlns:string
+查找结果：根元素下，所有名称空间定义为 xmlns的string元素
+
+实验4
+对比实验3，去掉xmlns=xmlns="http://WebXml.com.cn/
+
+
+xpath = "./string"
+
+假设服务器返回以下内容：
+    <ArrayOfString xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+       xmlns:xsd="http://www.w3.org/2001/XMLSchema"> 
+       <string>阿尔及利亚,3320</string> 
+       <string>阿根廷,3522</string> 
+       <string>阿曼,3170</string> 
+       <string>阿塞拜疆,3176</string> 
+       <string>埃及,3317</string> 
+       <string>埃塞俄比亚,3314</string> 
+       <string>爱尔兰,3246</string> 
+       <string>奥地利,3237</string> 
+       <string>澳大利亚,368</string> 
+       <string>巴基斯坦,3169</string> 
+       <string>巴西,3580</string> 
+       <string>保加利亚,3232</string> 
+       <string>比利时,3243</string> 
+    </ArrayOfString>
+
+实验结果：
+./string
+查找结果：根元素下，所有名称空间定义为 http://WebXml.com.cn/的string元素
+
+总结
+1）xmlns=URI定义元素默认的名称空间，使得作用范围内，可不用为元素显示设置名称空间前缀。
+<element_node xmlns=URI>
+<node1>
+    ...
+<node2>
+</element_node>
+
+xmlns=URI的作用域如下：
+<element_node xmlns=URI>
+    作用域，也就是说，仅在元素范围内
+</element>
+
+2） 一份xml文档中，同时只能存在一个默认的xmlns名称空间,后续元素标签中定义的xmlns会自动导致前面定义的xmlns不可用
+
+3）为元素设置自定义名称空间,形式如下：
+<namespace:element_name xmlns:namespace=URI>
+</namespace:element_name>
+
+4）xpath查找，不能使用绝对路径。
+
+5）根据实验1，实验1&实验2对比，实验3&实验4对比得出：
+如果设置了xmlns(默认名称空间xmlns=xxxx，或者非默认的自定义名称空间xmlns:prefix=URI),那么xpath查找名称空间作用域内的子元素时，必须使用名称空间查找./xmlns:node_name、./prefix:node_name。
+
+如果xmlns默认名称空间作用域范围内，子元素标签内设置了自定义名称空间，那么使用自定义名称空间查找 ./…/prefix:node_name
+
+如果既没定义默认名称空间，也没设置自定义名称空间，那么xpath查找元素时可不用指定名称空间 ./node_name

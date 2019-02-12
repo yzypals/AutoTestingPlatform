@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    {% load staticfiles %}
+    <!--引入JQuery-->
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery-3.2.1.min.js' %}"></script> 
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery.easyui.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery.min.js' %}"></script>     
+    <script type="text/javascript" src="{% static 'website/js/common.js' %}"></script>   
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/locale/easyui-lang-zh_CN.js' %}"></script> 
+    <link rel="stylesheet" type="text/css" href="{% static  'website/jquery-easyui/themes/default/easyui.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'website/jquery-easyui/themes/icon.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'website/jquery-easyui/demo/demo.css' %}">
+    <script>
+        var ifInsert = undefined; // 用于标记行是否是新增还是修改
+        var editIndex = undefined;     // 用于存储正在编辑行的索引
+
+        var requirementID = undefined;     // 用于存放需求任务ID
+
+        // 用于存储记录行中处于编辑，还未保存的值
+        var module = undefined; //需求模块
+        var requirement = undefined;  //需求任务
+        var person_in_charge = undefined; //测试负责人
+        var sub_task = undefined;  //子任务
+        var progress = undefined;  // 子任务进度       
+        var time_took = undefined; //预估耗时
+        var deadline = undefined;  //预计截止时间
+        var remark = undefined;    //备注
+        var order = undefined;
+    
+        function onLoadSuccess(data) {
+            // 修改“操作”列的按钮样式
+            $('.insertRowBtn').linkbutton({text:'插入', plain:true, iconCls:'icon-add'});
+             $('.copyRowBtn').linkbutton({text:'复制', plain:true, iconCls:'icon-add'});
+            $('.editRowBtn').linkbutton({text:'修改', plain:true, iconCls:'icon-edit'});
+            $('.deleteRowBtn').linkbutton({text:'删除', plain:true, iconCls:'icon-remove'});
+            $('.moveUpBtn').linkbutton({text:'上移', plain:true, iconCls:'icon-edit'});
+            $('.moveDownBtn').linkbutton({text:'下移', plain:true, iconCls:'icon-edit'}); 
+
+            $('.saveRowBtn').hide();
+            $('.cancelEditRowBtn').hide(); 
+            if (data) {
+                var mark=1;               //mark标记需要合并的单元格数
+                var flag=1;
+　　　　        for (var i=1; i <data.rows.length; i++) {     //这里循环表格当前的数据
+    　　　　　　    if (data.rows[i]['requirement'] == data.rows[i-1]['requirement']) {  //相邻两行的值相同则表表示就需要合并
+    　　　　　　　　     mark += 1;                                            
+    　　　　　　　　     $(this).datagrid('mergeCells',{
+    　　　　　　　　　　    index: i+1-mark,       //datagrid的index，表示从第几行开始合并；
+    　　　　　　　　　　    field: 'requirement',   //需要合并的单元格所在的列、行
+    　　　　　　　　　　    rowspan:mark     //需要合并的单元格数(纵向)，如果想要横向合并，就使用colspan：mark
+    　　　　　　　　    });
+                    } else {
+                        mark = 1;
+                    }
+                    if (data.rows[i]['requirement'] == data.rows[i-1]['requirement'] &&
+                        data.rows[i]['person_in_charge'] == data.rows[i-1]['person_in_charge']) {  //
+    　　　　　　　　    flag += 1;                                            
+    　　　　　　　　    $(this).datagrid('mergeCells',{
+    　　　　　　　　　　    index: i+1-flag,       
+    　　　　　　　　　　    field: 'person_in_charge',
+    　　　　　　　　　　    rowspan:flag    
+    　　　　　　　　    });
+    　　　　　　     } else {
+    　　　　　　　　     flag = 1; 
+    　　　　　　     }
+                } 　　　　       
+　　       } 
+
+            editIndex = undefined;
+            // 设置自动调整行高(主要是解决行号所在单元格和数据行错位问题)
+            $('#Test_task_detail').datagrid('fixRowHeight');
+        }
+
+        // 加载之前修改url值，以保持页面数据和树节点的对应关系
+        function onBeforeLoad(param){
+            // 获取当前页面所在父页面(tab页)的ID
+            var currentTab = window.parent.$('#tabs').tabs('getSelected');
+            var nodeID = currentTab.panel('options').id;
+            $('#Test_task_detail').datagrid('options').url = '/action/loadTestTasks?taskType=detail&nodeID=' + nodeID;
+        }
+
+        // 编辑时隐藏部分按钮
+        function hideNoneEditBtn(editIndex) {
+            $('#insertRowBtn' + editIndex).hide();
+            $('#copyRowBtn' + editIndex).hide();
+            $('#editRowBtn' + editIndex).hide();
+            $('#deleteRowBtn' + editIndex).hide();
+            $('#moveUpBtn' + editIndex).hide();
+            $('#moveDownBtn' + editIndex).hide();
+            $('.saveRowBtn').linkbutton({text:'保存', plain:true, iconCls:'icon-ok'});
+            $('.cancelEditRowBtn').linkbutton({text:'取消', plain:true, iconCls:'icon-cancel'});
+            $('#saveRowBtn' + editIndex).show();
+            $('#cancelEditRowBtn' + editIndex).show();
+        }
+        
+        // 格式化【操作】列
+        function formatOperationColumn(value,row,index){
+                var btn = "<a id='insertRowBtn" + index + "' class='insertRowBtn' onclick='insertRow("+JSON.stringify(row)  +"," + index+")' href='javascript:void(0)'>插入</a> \
+                    <a id='copyRowBtn" + index + "' class='copyRowBtn' onclick='copyRow("+JSON.stringify(row) +"," + index+")' href='javascript:void(0)'>复制</a> \
+                    <a id='editRowBtn" + index + "' class='editRowBtn' onclick='editRow(" + row.id +"," + index+")' href='javascript:void(0)'>修改</a>\
+                    <a id='deleteRowBtn" + index + "' class='deleteRowBtn' onclick='removeRow(\"Test_task_detail\"," + row.id +"," + index+")' href='javascript:void(0)'>删除</a>\
+                    <a id='moveUpBtn" + index + "' class='moveUpBtn' onclick='moveRow(\"Test_task_detail\"," + index+", this)' href='javascript:void(0)'>上移</a> \
+                    <a id='moveDownBtn" + index + "' class='moveDownBtn' onclick='moveRow(\"Test_task_detail\"," + index+", this)' href='javascript:void(0)'>下移</a> \
+                    <a id='saveRowBtn" + index + "' class='saveRowBtn' onclick='saveRow()' \
+                     href='javascript:void(0)' style='display:none'>保存</a>\
+                    <a id='cancelEditRowBtn" + index + "' class='cancelEditRowBtn' onclick='cancelEditRow(this)' href='javascript:void(0)' style='display:none'>取消</a>"; 
+                return btn;
+        }
+        
+        // 刷新行，用于解决合并单元格后，插入，编辑等错位问题
+        function refreshRow(){
+            var rows = $('#Test_task_detail').datagrid('getRows'); 
+            for (var i=1; i <rows.length; i++) {
+    　　　　　　    if (rows[i]['requirement'] == rows[i-1]['requirement']) {  //相邻两行的值相同则表表示就需要合并
+    　　　　　　　　    $('#Test_task_detail').datagrid('refreshRow',i);
+                        $('#Test_task_detail').datagrid('refreshRow',i-1); 
+    　　　　　　     }
+ 　　　　       }
+            onLoadSuccess();
+        }
+
+
+        // 点击表格“插入|新增”按钮事件函数实现
+        function insertRow(row, rowIndex) { 
+            refreshRow();
+            if (endEditing()) { 
+                if (rowIndex == undefined) { // 点击 新增 按钮
+                    editIndex = 0; 
+                    order = '';
+                } else { // 点击 插入 按钮
+                    editIndex = rowIndex + 1;
+                    order = row.order
+                }             
+                
+                $('#Test_task_detail').datagrid('insertRow',{
+                    index: editIndex, 
+                    row: { }
+                });
+                hideNoneEditBtn(editIndex);
+            
+                $('#Test_task_detail').datagrid('unselectAll');  
+                var row = $('#Test_task_detail').datagrid('selectRow', editIndex);
+                $(row).datagrid('beginEdit', editIndex);
+                ifInsert = true;
+            }                
+        }
+
+
+        // 点击表格“插入|新增”按钮事件函数实现
+        function copyRow(row, rowIndex) { 
+            if (endEditing()) { 
+                editIndex = rowIndex + 1;
+                var currentTab = window.parent.$('#tabs').tabs('getSelected');
+                var nodeID = currentTab.panel('options').id;
+                var params = {
+                    module:row.module,
+                    requirement:row.requirement,
+                    person_in_charge:row.person_in_charge,
+                    sub_task:row.sub_task,
+                    time_took:row.time_took,
+                    deadline:row.deadline,
+                    remark:row.remark,
+                    order:row.order,
+                    node_id:nodeID
+                };
+
+                $('#Test_task_detail').datagrid('insertRow',{
+                    index: editIndex, 
+                    row: params
+                });
+                onLoadSuccess();              
+                url = '/action/addTestDetailTask';
+                   
+                $.post(url, params, function(data,status){
+                        if (data == 'success') {
+                            $.messager.alert('提示','保存成功', 'info');
+                        } else {
+                            $.messager.alert('错误', '保存失败: ' + data, 'error');
+                        }
+                        $('#Test_task_detail').datagrid('reload');        
+                    }
+                ); 
+            } else {
+                $.messager.alert('错误', '保存失败', 'error');
+                $('#Test_task_detail').datagrid('reload');
+            }
+
+            editIndex = undefined;        
+        }  
+        
+
+       
+        // 点击 保存 按钮的函数实现
+        function saveRow(){
+            if (editIndex == undefined) {
+                $.messager.alert('提示', '操作失败，没有正在编辑的记录', 'info');
+                return;
+            } 
+            if ($('#Test_task_detail').datagrid('validateRow', editIndex)){
+                $('#Test_task_detail').datagrid('endEdit', editIndex);
+                var isValid = true;
+                if (requirement == '') {
+                    $.messager.alert('提示','保存失败，需求任务不能为空', 'warnging');
+                    isValid = false;
+                } else if (deadline == '') {
+                    $.messager.alert('提示','保存失败，预计截止时间不能为空', 'warnging');
+                    isValid= false;                 
+                } else if (time_took != '' && isNaN(time_took)){
+                    $.messager.alert('提示', '保存失败，预估耗时只能为数字', 'warnging');
+                    isValid= false;                 
+                }
+                if (!isValid) {
+                    ifInsert = undefined;
+                    editIndex = undefined;
+                    onLoadSuccess();
+                    $('#Test_task_detail').datagrid('reload');
+                    return;                    
+                }
+
+                var currentTab = window.parent.$('#tabs').tabs('getSelected');
+                var nodeID = currentTab.panel('options').id;
+                if (ifInsert == true) { // 新增
+                    var url = '/action/addTestDetailTask';
+                    var params = {   
+                        module:module,
+                        requirement:requirement,
+                        person_in_charge:person_in_charge,
+                        sub_task:sub_task, 
+                        time_took:time_took,
+                        deadline:deadline,
+                        remark:remark,
+                        order:order,
+                        node_id:nodeID
+                    };
+                } else if (ifInsert == false) { // 修改
+                    var url = '/action/updateTestDetailTask';
+                    var params = {
+                        id:requirementID,
+                        module:module,
+                        requirement:requirement,
+                        person_in_charge:person_in_charge,
+                        sub_task:sub_task, 
+                        progress:progress,
+                        time_took:time_took,
+                        deadline:deadline,
+                        remark:remark,
+                        node_id:nodeID
+                    };
+                }
+
+                $.post(url, params, function(data,status){
+                        if (data == 'success') {
+                            $.messager.alert('提示','保存成功', 'info');
+                        } else {
+                            $.messager.alert('错误', '保存失败: ' + data, 'error');
+                        }
+                        $('#Test_task_detail').datagrid('reload');        
+                    }
+                ); 
+            } else {
+                $.messager.alert('告警', '保存失败', 'error');
+                $('#Test_task_detail').datagrid('reload');
+            }
+
+            ifInsert = undefined;
+            editIndex = undefined; 
+            onLoadSuccess();
+        }
+
+        // 点击 取消 按钮的函数实现
+        function cancelEditRow() {
+            if (editIndex == undefined) {
+                $.messager.alert('提示', '操作失败，没有正在编辑的记录', 'info');
+                return;
+            } 
+            $('#Test_task_detail').datagrid('endEdit', editIndex);             
+            $('#Test_task_detail').datagrid('reload', editIndex);
+         
+            ifInsert = undefined;
+            editIndex = undefined;
+            onLoadSuccess();                       
+        }
+ 
+          // 结束编辑
+        function endEditing(){
+            if (editIndex == undefined) {
+                return true;
+            } else {
+                $.messager.alert('提示', '您还有记录未保存', 'warnging');
+                return false;
+            }
+        }
+
+        // 结束编辑时自动触发的事件函数实现
+        function onEndEdit(index, row) {
+            // 获取单元格中输入的内容
+            module = $(this).datagrid('getEditor', {index: index,field: 'module'}).target.val();
+            requirement = $(this).datagrid('getEditor', {index: index,field: 'requirement'}).target.val();
+            person_in_charge = $(this).datagrid('getEditor', {index: index,field: 'person_in_charge'}).target.val();
+            sub_task = $(this).datagrid('getEditor', {index: index,field: 'sub_task'}).target.val();
+            progress = $(this).datagrid('getEditor', {index: index,field: 'progress'}).target.val();
+            time_took = $(this).datagrid('getEditor', {index: index,field: 'time_took'}).target.val();
+            deadline = $(this).datagrid('getEditor', {index: index,field: 'deadline'}).target.val();
+            remark = $(this).datagrid('getEditor', {index: index,field: 'remark'}).target.val();
+        }
+
+        // 点击表格 修改 按钮的函数实现
+        function editRow(rowID, index){
+            refreshRow();       
+
+            if (endEditing()) { 
+                if (index == undefined) { // 点击表格上方的 修改 按钮
+                    //获取选中行的数据  
+                    var rowsSelected = $('#Test_task_detail').datagrid('getSelections');
+                    if (rowsSelected.length < 1) {  //如果没有选中行，提示信息  
+                        $.messager.alert("提示消息", "请选择要修改的记录！", 'info');  
+                        return;  
+                    } else if (rowsSelected.length > 1) {
+                        $.messager.alert("提示信息", "每次只能选择一条记录！", 'info');
+                        return;
+                    }
+                    editIndex = $('#Test_task_detail').datagrid('getRowIndex', rowsSelected[0]);
+                    requirementID = rowsSelected[0].id;
+                } else { // 点击记录行所在的 修改 按钮
+                    requirementID = rowID;
+                    editIndex = index;
+                }
+                hideNoneEditBtn(editIndex);  
+         
+                $('#promble_feedback').datagrid('unselectAll');  
+                var row = $('#Test_task_detail').datagrid('selectRow', editIndex);
+                $(row).datagrid('beginEdit', editIndex);
+                ifInsert = false;                
+            }  
+        }
+        // 删除表格中的记录
+        function removeRow(datagridID, rowID, index){ 
+            var idSelector = '#' + datagridID;
+            if (index == undefined) { // 点击表格上方的删除按钮
+                //获取选中行的数据  
+                var rowsSelected = $(idSelector).datagrid('getSelections');
+                if (rowsSelected.length < 1) {  //如果没有选中行，提示信息  
+                    $.messager.alert("提示信息", "请选择要删除的记录！", 'info');  
+                    return;  
+                }
+
+                $.messager.confirm("确认消息", "确定要删除所选记录吗？", function (isDelete) {  
+                    if (isDelete) { //确定删除
+                        var url = '/action/removeTask';
+                        var rowIDs = '';  // 存放所选记录的ID
+                        for (var i = 0; i < rowsSelected.length; i++) {  
+                            rowIDs += rowsSelected[i].id + ",";  
+                        }
+
+                        data = 'rowIDs=' + rowIDs + '&datagridID=' + datagridID;              
+                        $.post(url, data, function(data,status) {
+                            if (data == 'success') {
+                                $.each(rowsSelected, function(i, row){
+                                    var rowIndex = $(idSelector).datagrid('getRowIndex', row);
+                                    $(idSelector).datagrid('deleteRow', rowIndex); 
+                                });           
+                                $.messager.alert('提示信息', '删除成功', 'info');
+                                $(idSelector).datagrid('reload');  // 重新加载数据，防止执行其它操作时获取索引错误
+                            } else {
+                                $.messager.alert('错误信息', '删除失败:' + data, 'error');
+                            } 
+                        });                  
+                    }  
+                });  
+            } else { // 点击记录行所在的 删除 按钮
+                $.messager.confirm("确认消息", "确定要删除所选记录吗？", function (isDelete) {  
+                    if (isDelete) { //确定删除
+                        var url = '/action/removeTask'; 
+                        var data = 'rowIDs=' + rowID + ',&datagridID=' + datagridID;  
+
+                        $.post(url, data, function(data,status) {
+                            if (data == 'success') {
+                                $(idSelector).datagrid('deleteRow', index);
+                                $(idSelector).datagrid('reload');
+                                $.messager.alert('提示信息', '删除成功', 'info');
+                            } else {
+                                $.messager.alert('错误信息', '删除失败:' + data, 'warnging');
+                            } 
+                        });                  
+                    }  
+                });  
+            }
+        }            
+
+        // 样式设置
+        function cellStyler(value,row,index){
+            if (row['progress'] != '100%') {
+                return 'background-color:#ffee00;';
+            }
+        }   
+        
+        // 样式设置
+        function cellStylerForIfDelay(value,row,index){
+            if (row['if_delay'] == '是') {
+                return 'background-color:#ffee00;';
+            }
+        }   
+    </script>
+</head>
+<body>
+    <!--项目配置名称列表-->
+    <table class="easyui-datagrid" rownumbers="true" pagination="true" id="Test_task_detail"
+        data-options="border:false,
+        singleSelect:false,
+        fit:true,       
+        collapsible: true,
+        toolbar: toolbar, 
+        rownumbers: true,
+        pageSize: 25,    
+        pageList: [25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100],          
+        nowrap: false,
+        url: '',
+        method: 'get',
+        onEndEdit:onEndEdit,
+        onBeforeLoad:onBeforeLoad,
+        onLoadSuccess:onLoadSuccess">
+        <thead>
+            <tr>
+                <th data-options="field:'ck',checkbox:true, fitColumns:true"></th>
+                <th data-options="field:'id', align: 'center', fitColumns:true">任务ID</th>
+                <th data-options="field:'module', align: 'left', editor:{type:'text'}" width='200px'>功能模块</th>
+                <th data-options="field:'requirement', align: 'left', editor:{type:'text'}, styler:cellStyler"  width='200px' >需求任务</th> 
+                <th data-options="field:'person_in_charge', align: 'center', editor:{type:'text'}" width="70px">测试负责人</th>
+                <th data-options="field:'sub_task', align: 'left', editor:{type:'text'}, styler:cellStyler"  width='150px' >子任务</th>
+                <th data-options="field:'progress', align: 'center',editor:{type:'text'}, fitColumns:true">进度</th>
+                <th data-options="field:'time_took', align: 'center', editor:{type:'text'},fitColumns:true">预估耗时(H)</th> 
+                <th data-options="field:'deadline', align: 'center', editor:{type:'datetimebox'}
+                ,formatter:formatDatebox" width="90px">预计截止时间</th>
+                <th data-options="field:'finish_time', align: 'center', formatter:formatDatebox" width="90px">实际完成时间</th>
+                <th data-options="field:'if_delay', align: 'center', styler:cellStylerForIfDelay" width="60px"">是否延迟</th> 
+                <th data-options="field:'history_progress', align: 'left'" width="400px">进度更新轨迹</th> 
+                <th data-options="field:'remark', align: 'left', editor:{type:'text'}" width="150px">备注</th>
+                <th data-options="field:'order', align: 'center',fitColumns:true">顺序</th>                 
+                <th data-options="field:'operation',title:'操作', align: 'center', fitColumns:false,formatter:function(value,row,index){return formatOperationColumn(value,row,index);}"  width='360px'>操作</th> 
+            </tr>
+            </thead>  
+    </table>
+
+   <script type="text/javascript">
+       // 定义工具栏
+       var toolbar = addToolbar('Test_task_detail'); 
+   </script>
+</body>
+</html>

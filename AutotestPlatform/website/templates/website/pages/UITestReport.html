@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    {% load staticfiles %}
+    <!--引入JQuery-->
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery-3.2.1.min.js' %}"></script> 
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery.easyui.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery.min.js' %}"></script>      
+    <script type="text/javascript" src="{% static 'website/js/common.js' %}"></script>    
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/locale/easyui-lang-zh_CN.js' %}"></script> 
+    <link rel="stylesheet" type="text/css" href="{% static  'website/jquery-easyui/themes/default/easyui.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'website/jquery-easyui/themes/icon.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'website/jquery-easyui/demo/demo.css' %}">
+    <script>
+        function onLoadSuccess(data) {
+            // 修改“操作”列的按钮样式
+            $('.viewCasesBtn').linkbutton({text:'查看详情', plain:true, iconCls:'icon-add'});
+            $('.deleteRowBtn').linkbutton({text:'删除', plain:true, iconCls:'icon-remove'});
+            // 设置自动调整行高(主要是解决行号所在单元格和数据行错位问题)
+            $('#UI_test_report_for_summary').datagrid('fixRowHeight');
+        }
+
+  
+        // 格式化【操作】列
+        function formatOperationColumn(value,row,index){
+            var btn = "<a id='viewCasesBtn" + index + "' class='viewCasesBtn' onclick='viewUITestReportCases(\"#tabs\", " + row.execution_num + "," + row.plan_id +")' href='javascript:void(0)'>查看详情</a> \
+                    <a id='deleteRowBtn" + index + "' class='deleteRowBtn' onclick='removeRow(\"UI_test_report_for_summary\"," + row.id +"," + index+")' href='javascript:void(0)'>删除</a>"; 
+            return btn;
+        }
+        
+        // 查看同测试概要记录关联的用例
+        function viewUITestReportCases(tabsID, executionNnum, planID) {
+            var url = '/pages/testReportCaseView?reportType=UITestReport&planID=' + planID;    
+            var title = '查看详情' 
+            if($(tabsID).tabs('exists', title)){  // 如果tab已存在，则重新加载tab
+                $(tabsID).tabs('select', title);  // 激活tab标签页 
+                var currentTab = $(tabsID).tabs('getSelected'); 
+                $(tabsID).tabs('close', title);  // 关闭tab标签页
+                    
+                var iframe='<iframe scrolling="auto" frameborder="0"  src="'+url+'" style="width:100%;height:100%;"></iframe>';
+                $(tabsID).tabs('add',{
+                        id: executionNnum + '#' + planID,
+                        title: title,
+                        content: iframe,
+                        closable: true
+                    });
+            } else{ //否则，添加tab
+                var iframe='<iframe scrolling="auto" frameborder="0"  src="'+url+'" style="width:100%;height:100%;"></iframe>';
+                $(tabsID).tabs('add',{
+                    id:executionNnum + '#' + planID,
+                    title: title,
+                    content: iframe,
+                    closable: true
+                });
+            }
+        }
+
+        // 单元格样式设置
+        function cellStylerForFailure(value, row, index){
+            if (row['case_fail_num'] != '0') {
+                return 'background-color:red;';
+            } 
+        }   
+
+        function cellStylerForBlock(value, row, index){
+            if (row['case_block_num'] != '0') {
+                return 'background-color:#ffee00;';
+            }
+        }           
+
+    </script>
+</head>
+
+<body class="easyui-layout">
+    <div data-options="region:'center'" title="">
+        <div class="easyui-tabs"  id="tabs" data-options="fit:true, border:false, plain:true">
+            <div title="测试概况">
+            <table class="easyui-datagrid" rownumbers="true" pagination="true" id="UI_test_report_for_summary"
+                data-options="border:false,
+                singleSelect:false,
+                fit:true,
+                collapsible: true,
+                toolbar: toolbar, 
+                rownumbers: true,
+                pageSize: 25,    
+                pageList: [25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100],         
+                nowrap: false,
+                url: '/action/loadTestReportForSummary?reportType=UITestReport',
+                method: 'get',
+                onLoadSuccess:onLoadSuccess">
+                <thead>
+                    <tr>
+                        <th data-options="field:'ck',checkbox:true, fitColumns:true"></th>
+                        <th data-options="field:'id', align: 'center', fitColumns:true">ID</th>
+                        <th data-options="field:'execution_num', align: 'center'" width="100px">执行编号</th>          
+                        <th data-options="field:'project_id', align: 'center', fitColumns:true, hidden:true">项目ID</th> 
+                        <th data-options="field:'plan_id', align: 'center', fitColumns:true">计划ID</th>
+                        <th data-options="field:'project_name', align: 'left'" width="200px">项目名称</th>    
+                        <th data-options="field:'plan_name', align: 'left'" width="200px">计划名称</th>
+                        <th data-options="field:'browser', align: 'center'" width="70px">浏览器</th>
+                        <th data-options="field:'start_time', align: 'center'" width="160px">开始运行时间</th>
+                        <th data-options="field:'end_time', align: 'center'" width="160px">结束运行时间</th>
+                        <th data-options="field:'time_took', align:'center'" width="140px">运行耗时</th> 
+                        <th data-options="field:'case_total_num', align: 'center'" width="70px">用例总数</th>
+                        <th data-options="field:'case_pass_num', align: 'center'" width="50px">成功</th>
+                        <th data-options="field:'case_fail_num', align: 'center', styler:cellStylerForFailure" width="50px">失败</th>
+                        <th data-options="field:'case_block_num', align: 'center', styler:cellStylerForBlock" width="50px">阻塞</th>
+                        <th data-options="field:'remark', align: 'left'" width="200px">备注</th>
+                        <th data-options="field:'operations', title:'操作', align: 'center',
+                        formatter:function(value,row,index){return formatOperationColumn(value,row,index);}"
+                        width="150px">操作</th>              
+                </tr>
+                </thead>  
+            </table>
+            </div>
+
+            <!--增加工具条-->
+            <script type="text/javascript">
+                // 定义工具栏
+                var toolbar = addToolbar('UI_test_report_for_summary','test_report_view'); 
+            </script>
+        </div>
+    </div>
+</body>
+</html>

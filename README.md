@@ -3,21 +3,17 @@
 #### 介绍
 基于Python,Django,Easyui,JQuery,Selenium实现的自动化测试小平台，实现接口自动化测试及Web UI自动化测试
 
-#### 软件架构
-软件架构说明
+#### 详细介绍
 
+#参考wiki
 
-#### 安装教程
+https://gitee.com/ishouke/AutoTestingPlatform/wikis/%E5%9F%BA%E4%BA%8Epython-Django-Easyui%E5%AE%9E%E7%8E%B0%E7%9A%84UI%E3%80%81%E6%8E%A5%E5%8F%A3%E8%87%AA%E5%8A%A8%E5%8C%96%E6%B5%8B%E8%AF%95%E6%A1%86%E6%9E%B6%EF%BC%8C%E8%87%AA%E5%8A%A8%E5%8C%96%E6%B5%8B%E8%AF%95%E5%B9%B3%E5%8F%B0?sort_id=1330446
 
-1. xxxx
-2. xxxx
-3. xxxx
+#参考文档：
 
-#### 使用说明
+基于python+Djano+Easyui实现的接口自动化测试框架V1.0.pdf，
 
-1. xxxx
-2. xxxx
-3. xxxx
+基于python+Djano+Easyui实现的UI自动化测试框架V1.0.pdf
 
 #### 参与贡献
 
@@ -25,13 +21,3 @@
 2. 新建 Feat_xxx 分支
 3. 提交代码
 4. 新建 Pull Request
-
-
-#### 码云特技
-
-1. 使用 Readme\_XXX.md 来支持不同的语言，例如 Readme\_en.md, Readme\_zh.md
-2. 码云官方博客 [blog.gitee.com](https://blog.gitee.com)
-3. 你可以 [https://gitee.com/explore](https://gitee.com/explore) 这个地址来了解码云上的优秀开源项目
-4. [GVP](https://gitee.com/gvp) 全称是码云最有价值开源项目，是码云综合评定出的优秀开源项目
-5. 码云官方提供的使用手册 [https://gitee.com/help](https://gitee.com/help)
-6. 码云封面人物是一档用来展示码云会员风采的栏目 [https://gitee.com/gitee-stars/](https://gitee.com/gitee-stars/)

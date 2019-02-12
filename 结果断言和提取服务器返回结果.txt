@@ -1,0 +1,624 @@
+===============================================结果断言===============================================
+1、包含成员
+断言类型：包含成员
+
+检查响应：body
+
+断言模式：
+(例子)
+
+[
+{"模式":"\"success\"", "消息":"fail#返回结果不包含英文双引号包含的success"},
+{"模式":"status:1", "消息":"fail#返回结果不包含 status:1"}
+]
+
+
+注意：
+1）断言的含义：
+在body/header/code中查找想要的值valueN,找不到则反馈"消息"中填写的内容，如上，可以支持多个模式的校验，以下不再赘述
+可用于检查给定字符串是否包含在返回结果中，给定值是否是集合/元组/列表的成员、字典的key值
+
+返回结果，必须是可迭代对象，目前仅支持“字符串(包括html文档，xml文档)”，“字典”，“列表”，“元组”，“集合”
+
+2）检查响应：
+body-在响应体中查找(如果检查sql查询返回结果，固定为body)
+header-在响应头中查找
+code-在响应状态码中查找
+
+以下不再赘述
+
+3）断言模式：
+(例子)
+
+[
+{"模式":value1,"消息":"消息内容1"},
+{"模式":value2,"消息":"消息内容2"},
+{"模式":value3,"消息":"消息内容3"},
+……
+{"模式":valueN,"消息":"消息内容n"}
+]
+
+如果要检查的valueN本身包含双引号，则替换双引号为 \" ;    
+消息内容以fail#开头，如果包含双引号，则替换为\"，比如"消息":"fail#\"xxx\"非法"
+
+以下不再赘述
+
+4) 如果定义的变量已经存在，会覆盖已有变量的值，以下不再赘述
+
+
+2、不包含成员
+断言类型：不包含成员
+
+检查响应：body
+
+断言模式：
+[
+{"模式":"\"success\"", "消息":"fail#返回结果包含英文双引号包含的success"},
+{"模式":"status:1", "消息":"fail#返回结果包含 status:1"}
+]
+
+
+注意：参考"包含成员"
+
+
+3、包含字符串
+断言类型：包含字符串
+
+检查响应：body
+
+断言模式：
+(例子)
+
+[
+{"模式":"\"success\":true", "消息":"fail#success不为true"},
+{"模式":"\"success\":false", "消息":"fail#success不为false"}
+]
+
+
+注意：
+1）用于检查服务器返回内容是否包含指定字符串，只支持返回结果为 字符串(包括html文档，xml文档)，字典，列表，元组，集合，int，float类型的检测
+
+
+4、不包含字符串
+断言类型：不包含字符串
+
+检查响应：body
+
+断言模式：
+(例子)
+
+
+[
+{"模式":"\"success\":true", "消息":"fail#success为true"},
+{"模式":"\"success\":false", "消息":"fail#success为false"}
+]
+
+注意：
+1）用于检查服务器返回内容是否包含指定字符串，只支持返回内容为 字符串(包括html文档)，字典，列表，元组，集合，int，float类型的检测
+
+
+
+5、键值相等
+断言类型：键值相等
+
+检查响应：body
+
+断言模式：
+(例子)
+
+[
+{"模式":{"key1":true}, "消息":"fail#key1的值不为true"},
+{"模式":{"key2":{"key3":value}}, "消息":"fail#key3的值不为value"}
+]
+
+例子：假设服务器返回内容如下，
+{
+    "fullname": "tester",
+    "goods_type1": [
+        {
+            "goodsId": 1,
+            "goods_name": "apple"
+        },
+        {
+            "goodsId": 2,
+            "goods_name": "apple"
+        }
+    ],
+    "goods_type2": [
+        {
+            "goodsId": 1,
+            "goods_name": "redapple"
+        }
+    ],
+    "goods_type3": {
+        "goodsId": 7
+    },
+    "goods_type4": 7,
+    "price": {
+        "apple": 10.5,
+        "pear": 8
+    }
+}
+
+
+"输出":
+[
+{"模式":{"fullname":"tester"}, "消息":"fail#fullname不为tester"},
+{"模式":{"goods_type1":{"goodsId":1}}, "消息":"fail#goodsId不为1"},
+{"模式":{"goods_type1":{"goods_name":"apple"}}, "消息":"fail#goods_name不为apple"},
+{"模式":{"goods_type2":{"goods_name":"redapple"}}, "消息":"fail#goods_name不为redapple"},
+{"模式":{"goods_type3":{"goodsId":7}}, "消息":"fail#goodsId不为7"},
+{"模式":{"price":{"apple":10.5}}, "消息":"fail#apple不为10.5"}]
+}
+
+注意：
+1）模式对应值填写规范：{"key_of_leve1":value} 、{"key_of_leve1":{"key_of_leve2":value}}、{"key_of_leve1":{"key_of_leve2":{"key_of_leve3":value}}}  
+也就说，键值的层级关系和服务器返回的键值层级关系一一对应，如果最后层级存在多个一样的{"key":value}，那取其中一个
+
+2）用于检查给定模式中key-value是否和指定字典中对应层级的key-value相同，只支持服务器返回内容为字典类型的json串、字符类型的字典的key-value比较
+
+
+
+6、匹配正则表达式
+断言类型：匹配正则表达式
+
+检查响应：body
+
+断言模式：
+[
+{"模式":"regex1","消息":"fail#不符合断言时返回的消息"},
+{"模式":"regex2","消息":"fail#不符合断言时返回的消息"},
+...,
+{"模式":"regexN","消息":"fail#不符合断言时返回的消息"}
+]
+
+
+(例子)
+[
+{"模式":"\"success\":true", "消息":"fail#success不为True"},
+{"模式":"\"success\":false", "消息":"fail#success不为false"}
+]
+
+
+注意：
+1）用于检查指定内容中是否匹配给定模式，即正则表达式
+注意这里的匹配为包含关系，即正则表达式表示的内容为指定内容的子集
+
+2）值支持服务器返回内容为 字符串(包括html文档，xml文档)，字典，列表，元组，集合，int，float型的检测
+
+
+7、不匹配正则表达式
+断言类型：不匹配正则表达式
+
+检查响应：body
+
+断言模式：
+[
+{"模式":"regex1","消息":"fail#不符合断言时返回的消息"},
+{"模式":"regex2","消息":"fail#不符合断言时返回的消息"},
+...,
+{"模式":"regexN","消息":"fail#不符合断言时返回的消息"}
+]
+
+
+(例子)
+
+[
+{"模式":"\"success\":true", "消息":"fail#success为True"},
+{"模式":"\"success\":false", "消息":"fail#success为false"}
+]
+
+
+例子：假设服务器返回内容如下，
+<ArrayOfString xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://WebXml.com.cn/">
+    <string>阿尔及利亚,3320</string>
+    <string>阿根廷,3522</string>
+
+"输出"：
+[{"模式":"string.*3320</string", "消息":"fail#返回地区不包含3320"}]
+
+注意：
+1）用于检查指定内容中是否不匹配给定模式，即正则表达式
+注意这里的匹配为包含关系，即正则表达式表示的内容为指定内容的子集
+
+2）值支持服务器返回内容为 字符串(包括html文档，xml文档)，字典，列表，元组，集合，int，float型的检测
+
+
+8、完全匹配字典
+断言类型：完全匹配字典
+
+检查响应：body
+
+断言模式：
+[{"模式":python字典, "消息":"fail#返回内容不完全匹配字典时抛出的消息"}]
+
+(例字)
+[{"模式":{"success":true,"message":null,"attach":"20801419623725867008"}, "消息":"fail#创建储值卡支付订单失败,返回结果和字典模式不匹配"}]
+
+
+注意：
+1）用于检查服务器返回内容是否和给定字典完全匹配，即键值对是否和指定字典的键值对完全相同，只支持服务器返回内容为json串、字符串类型的字典的比较
+
+
+9、完全匹配列表
+断言类型：完全匹配列表
+
+检查响应：body
+
+断言模式：
+[{"模式":python列表, "消息":"fail#返回内容不完全匹配列表时抛出的消息"}]
+
+(例子)
+[{"模式":["success","shouke",2016], "消息":"fail#返回结果和列表不一致"}]
+}
+
+注意：
+1）用于检查服务器返回内容是否完全匹配给定列表，即列表是否和指定列表的元素值一模一样，只支持服务器返回内容为列表、字符串类型的列表的比较
+
+
+10、完全匹配集合
+断言类型：完全匹配集合
+
+检查响应：body
+
+断言模式：
+[{"模式":python集合, "消息":"fail#返回内容不完全匹配集合时抛出的消息"}]
+
+
+(例子)
+
+[{"模式":{"success", "shouke", 2016}", "消息":"fail#返回结果和集合不一致"}]
+
+
+注意：
+1）用于检查服务器返回内容是否完全匹配给定集合，即是否和指定集合的元素值一模一样，只支持服务器返回内容为集合、字符串类型的集合的比较
+
+
+11、完全匹配元组
+断言类型：完全匹配元组
+
+检查响应：body
+
+断言模式：
+[{"模式":python元组, "消息":"fail#返回内容不完全匹配元组时抛出的消息"}]
+
+
+(例子)
+[{"模式":("success","shouke",2016), "消息":"fail#返回结果和元组不一致"}]
+
+
+注意：
+1）用于检查服务器返回内容是否完全匹配给定元组，即是否和指定元组的元素值一模一样，只支持服务器返回内容为元组、字符串类型的元组的比较
+
+
+12、xpath断言
+断言类型：xpath断言
+
+检查响应：body
+
+断言模式：
+[
+{"模式":{"xpath表达式1":期望值,"xpath表达式2":期望值, ..., "xpath表达式N":期望值},"消息":"fail#不符合断言时抛出的消息"},
+{"模式":{"xpath表达式2":期望值},"消息":"fail#不符合断言时抛出的消息"},
+...,
+{"模式":{"xpath表达式N":期望值},"消息":"fail#不符合断言时抛出的消息"}
+]
+
+注意：
+1) 每个xpath表达式只能表示一个元素，不支持一个xpath表达式匹配多个元素的断言
+
+例子：假设服务器返回如下
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope
+    xmlns:soap="http://www.w3.org/2003/05/soap-envelope"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <soap:Body>
+        <getSupportProvinceResponse
+            xmlns="http://WebXml.com.cn/">
+            <getSupportProvinceResult>
+                <string>直辖市</string>
+                <string>特别行政区</string>
+                <string>黑龙江</string>
+                <string>吉林</string>
+                <string>辽宁</string>
+                <string>内蒙古</string>
+                <string>河北</string>
+                <string>河南</string>
+                <string>山东</string>
+                <string>山西</string>
+                <string>江苏</string>
+                <string>安徽</string>
+                <string>陕西</string>
+                <string>宁夏</string>
+                <string>甘肃</string>
+                <string>青海</string>
+                <string>湖北</string>
+                <string>湖南</string>
+                <string>浙江</string>
+                <string>江西</string>
+                <string>福建</string>
+            </getSupportProvinceResult>
+        </getSupportProvinceResponse>
+    </soap:Body>
+</soap:Envelope>
+
+
+[{"模式":{"./soap:Body/xmlns:getSupportProvinceResponse/xmlns:getSupportProvinceResult/xmlns:string[1]":"直辖市",
+"./soap:Body/xmlns:getSupportProvinceResponse/xmlns:getSupportProvinceResult/xmlns:string[2]":"特别行政区"}, 
+"消息":"fail#结点排序错误"}]
+
+说明：
+通常接口内容会包含两类标识，比如code,flag,success，其中一类表示通讯是否成功，比如："code":4001,表示请求成功，
+另一种表示业务执行成功，比如 "success":true,断言的时候需要注意有所选择，因为通讯请求成功并代表业务执行成功。
+	
+===============================================针对数据库查询结果的断言===============================================
+1、db列值相等
+断言类型：db列值相等
+
+检查响应：body
+
+断言模式：
+[
+{"模式"：[比较值1,期望值1], "消息"："fail#比较值不等于期望值时抛出的消息"},
+{"模式"：[比较值2,期望值2], "消息"："fail#比较值不等于期望值时抛出的消息"},
+...,
+{"模式"：[比较值N,期望值N], "消息"："fail#比较值不等于期望值时抛出的消息"}
+]
+
+
+例子：
+假设步骤填写如下
+URL/SQL：
+SELECT step_type, request_header FROM `website_api_test_case_step`
+where `order`=%s and id=%s and request_method = %s limit 1
+
+输入参数：
+4,20,"GET"
+
+输出：
+{"db":{"step_type":2, "order":1}}
+
+如果数据库服务器返回，且仅返回了一条内容,如下
+order          step_type
+  10            请求接口
+
+断言模式：
+[
+{"模式"：[$order$, 10], "消息"："fail#顺序值不为10"},
+{"模式"：["$step_type$","请求接口"], "消息"："fail#操作步骤不为 请求接口"}
+]
+
+注意：
+1、如果数据库返回值为字符串，那么替换动态变量后，需要手动加上双引号，如上"$step_type$"
+2、列值相等、列值不相等，可用的前提是，定义了“输出”
+
+2、db列值不等
+断言类型：db列值不相等
+
+检查响应：body
+
+断言模式：
+
+[
+{"模式"：[比较值1,期望值1], "消息"："fail#比较值等于期望值时抛出的消息"},
+{"模式"：[比较值2,期望值2], "消息"："fail#比较值等于期望值时抛出的消息"},
+...,
+{"模式"：[比较值N,期望值N], "消息"："fail#比较值等于期望值时抛出的消息"}
+]
+
+例子(略)
+参考 db列值相等
+
+
+===============================================提取web服务器返回结果===============================================
+1、键值提取
+输出:
+{"dic":{"var1":{"key1":"value"},"var2":{"key2":"value"}}}
+
+注意：
+1）输出含义： 
+{"提取方式":{"变量名称":{"字典对应层级的key":"key_value"}}}
+
+2）目前只支持服务器返回内容为字典、字符串类型的字典的目标值提取
+
+3）输入规范参考"断言结果"中的"键值相等"规则
+
+2、正则表达式提取
+输出：
+{"re":{"var1": "regex1", "var2":"regex2", ……, "varN":"regexN"}} 
+
+例子：
+假设服务器返回：
+b'{"success":true,"message":null,"attach":"20801781354907201536"}'
+
+输出定义如下：
+{"re":{"success": "\"success\":(.+?),", "attach":"attach\":\"(.+?)\""}} 
+
+将会保存ture到变量success_1，保存20801781354907201536到attach_1变量
+
+注意：
+1）输出含义：
+{"提取方式":{"变量名称1":"正则表达式1", "变量名称2":"正则表达式2",……,"变量名称N":"正则表达式N",}}
+
+在服务器返回内容中用则表达式查找目标内容，找到则存储到对应的变量中，这里会根据"检查响应"动态选择的查找范围，
+如果"检查响应"为code，则从响应码提取；为header，则从响应头提取，为body，则从响应体中提取
+
+
+2）目前仅支持服务器返回内容为 字符串(包括html文档)，字典，列表，元组，集合，int，float型的提取
+
+3）变量名称：
+存储目标的变量命名为 "变量名_N"，其中N为数字，1，2，3，...，N，其中，1表示提取的第一个内容，2，表示提取的第二个内容，以此类推，例：success_1, attach_1。
+
+
+
+3、xpath提取
+输出：
+{"xpath":{"var1": "xpath_expresstion1","var2":"xpath_expresstion2", ……, "varN":"xpath_expresstionN"}}
+
+
+注意：
+1）输出含义：
+{"提取方式":{"变量名称1":"xpath表达式1", "变量名称2":"xpath表达式2", ……, "变量名称N":"xpath表达式N",}}
+
+在服务器返回内容中用xpath表达式查找目标内容，找到则存储到对应的变量中，这里会根据"检查响应"动态选择的查找范围，
+如果"检查响应"为code，则从响应码提取；为header，则从响应头提取，为body，则从响应体中提取
+
+
+2）仅支持服务器返回内容为 xml 格式字符的提取
+
+3）变量名称：
+因为一个xpath可能会匹配多个元素，存储目标的变量命名设计为 "变量名称_N"，其中N为数字，1，2，3，...，N，
+其中，1表示提取的第一个内容，2，表示提取的第二个内容，以此类推，例：success_1, attach_1。
+
+
+例子：假设服务器返回如下
+<soap:Envelope xmlns="http://www.examp.com"  xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" > 
+    <node2> 
+        <id>goods1</id> 
+    </node2>     
+    <ns1:Body xmlns:ns1="http://service.rpt.data.platform.ddt.sf.com/"> 
+        <ns2:selectByPrimaryKeyResponse  xmlns:ns2="http://service.rpt.data.platform.ddt.sf2.com/"   
+                xmlns="http://www.overide_first_defaul_xmlns.com">   
+            <return> 
+                <copeWith>1.00</copeWith> 
+                <discount>0.99</discount> 
+                <id>144</id> 
+                <invoice>2</invoice> 
+                <invoiceType></invoiceType> 
+                <orderCode>DDT201704071952057186</orderCode> 
+                <orderDate>2017-04-07 19:52:06.0</orderDate> 
+                <paid>0.01</paid> 
+                <payType>pc</payType> 
+                <productName>快递包</productName> 
+                <state>0</state> 
+                <userId>2</userId> 
+            </return> 
+            <return> 
+                <copeWith>2.00</copeWith> 
+                <discount>0.99</discount> 
+                <id>143</id> 
+                <invoice>2</invoice> 
+                <invoiceType></invoiceType> 
+                <orderCode>DDT201704071951065731</orderCode> 
+                <orderDate>2017-04-07 19:51:07.0</orderDate>  
+                <paid>0.01</paid> 
+                <payType>pc</payType> 
+                <productName>快递包</productName> 
+                <state>0</state> 
+                <userId>2</userId> 
+            </return> 
+            <return> 
+                <copeWith>3.00</copeWith> 
+                <discount>0.99</discount> 
+                <id>142</id> 
+                <invoice>2</invoice> 
+                <invoiceType></invoiceType> 
+                <orderCode>DDT201704071945408575</orderCode> 
+                <orderDate>2017-04-07 19:45:40.0</orderDate> 
+                <paid>0.01</paid> 
+                <payType>pc</payType> 
+                <productName>快递包</productName> 
+                <state>0</state> 
+                <userId>2</userId> 
+            </return>             
+            <return attr="re"> 
+                 <copeWith>4.00</copeWith> 
+                <copeWith>5.00</copeWith> 
+                <discount>0.99</discount> 
+                <id>141</id> 
+                <invoice>1</invoice> 
+                <invoiceType>增值税普通发票</invoiceType> 
+                <orderCode>DDT201704071845403738</orderCode> 
+                <orderDate>2017-04-07 18:45:41.0</orderDate> 
+                <paid>0.01</paid> 
+                <productName>快递包</productName> 
+                <state>0</state> 
+                <userId attr="testattr">2</userId> 
+            </return> 
+        </ns2:selectByPrimaryKeyResponse> 
+    </ns1:Body> 
+    <ns1:Body xmlns:ns1="http://service.rpt.data.platform.ddt.sf.com/"> 
+        <ns2:selectByPrimaryKeyResponse  xmlns:ns2="http://service.rpt.data.platform.ddt.sf2.com/">  
+        </ns2:selectByPrimaryKeyResponse> 
+        <ns2:selectByPrimaryKeyResponse  xmlns:ns2="http://service.rpt.data.platform.ddt.sf2.com/">  
+        </ns2:selectByPrimaryKeyResponse> 
+    </ns1:Body> 
+</soap:Envelope>
+
+
+"输出":
+{
+"xpath":
+{"copeWith": "./ns1:Body/ns2:selectByPrimaryKeyResponse/xmlns:return[1]/xmlns:copeWith",
+"orderCode":"./ns1:Body/ns2:selectByPrimaryKeyResponse/xmlns:return[3]/xmlns:orderCode"}
+}
+
+这里将会提取第一个copeWith元素的value到变量copeWith_1，提取第一个orderCode对应的value到orderCode_1变量
+
+例子：假设服务器返回如下
+<ArrayOfString xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://WebXml.com.cn/">
+    <string>阿尔及利亚,3320</string>
+    <string>阿根廷,3522</string>
+    <string>阿曼,3170</string>
+    <string>阿塞拜疆,3176</string>
+    <string>埃及,3317</string>
+    <string>埃塞俄比亚,3314</string>
+    <string>爱尔兰,3246</string>
+    <string>奥地利,3237</string>
+    <string>澳大利亚,368</string>
+    <string>巴基斯坦,3169</string>
+    <string>巴西,3580</string>
+    <string>保加利亚,3232</string>
+    <string>比利时,3243</string>
+</ArrayOfString>
+
+"输出":
+{"xpath":"./xmlns:string"}}
+
+这里将会提取每个string元素的值，从上到下，分别保存到变量string_1,string_2,..., string_N中
+
+更多关于xpath查找，参考文档：关于xpath查找xml元素的一点总结
+
+===============================================提取数据库服务器返回结果===============================================
+1、提取SQL查询返回记录
+输出：
+{"db":{"var1": value1, "var2": value2, ……, "varN":valueN}}
+
+
+例子：
+假设步骤填写如下
+URL/SQL：
+SELECT step_type, request_header FROM `website_api_test_case_step`
+where `order`=%s and id=%s and request_method = %s limit 1
+
+输入参数：
+4,20,'GET'
+
+输出：
+{"db":{"step_type":2, "request_header":1}}
+
+如果数据库服务器返回，且仅返回了一条内容,如下
+request_header                       step_type
+{'Accept-Encoding': 'gzip,deflate'}   请求接口
+
+那么，将把{'Accept-Encoding': 'gzip,deflate'}存储到变量request_header，把 请求接口 存储到变量step_type
+
+
+注意：
+1）输出含义：
+{"提取方式":{"变量名称1":1, "变量名称2":2, "变量名称3":3,……,"变量名称N":N}}
+其中，N=1,2,3,...，表示把SQL返回记录中第N列的值存储到对应的变量名称N中
+
+2）仅支持返回一条查询结果的记录提取
+
+
+
+
+
+
+
+
+

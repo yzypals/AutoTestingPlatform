@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    {% load staticfiles %}
+    <!--引入JQuery-->
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery-3.2.1.min.js' %}"></script> 
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery.easyui.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery.min.js' %}"></script>      
+    <script type="text/javascript" src="{% static 'website/js/common.js' %}"></script>    
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/locale/easyui-lang-zh_CN.js' %}"></script> 
+    <link rel="stylesheet" type="text/css" href="{% static  'website/jquery-easyui/themes/default/easyui.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'website/jquery-easyui/themes/icon.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'website/jquery-easyui/demo/demo.css' %}">
+    <script>
+     
+        var ifInsert = undefined; // 用于标记行是否是新增还是修改
+        var editIndex = undefined;     // 用于存储正在编辑行的索引
+        var ID = undefined;     // 存放行自增ID
+
+        // 用于存储记录行中处于编辑，还未保存的值
+        var name = undefined;         // 变量名
+        var value = undefined;       // 变量值
+        var environment = undefined;  // 所属环境
+        var project_type = undefined; // 项目类型
+        var project_name = undefined; // 所属项目
+        var project_id = -1;   // 所属项目id
+        var order = undefined; // 顺序
+
+        function onLoadSuccess(data) {
+            // 修改“操作”列的按钮样式
+            $('.insertRowBtn').linkbutton({text:'插入', plain:true, iconCls:'icon-add'});
+            $('.editRowBtn').linkbutton({text:'修改', plain:true, iconCls:'icon-edit'});
+            $('.deleteRowBtn').linkbutton({text:'删除', plain:true, iconCls:'icon-remove'});
+            $('.moveUpBtn').linkbutton({text:'上移', plain:true, iconCls:'icon-edit'});
+            $('.moveDownBtn').linkbutton({text:'下移', plain:true, iconCls:'icon-edit'}); 
+
+            $('.saveRowBtn').hide();
+            $('.cancelEditRowBtn').hide(); 
+
+            editIndex = undefined;
+
+            // 设置自动调整行高(主要是解决行号所在单元格和数据行错位问题)
+            $('#Global_variable_setting').datagrid('fixRowHeight');
+        }
+
+        // 格式化【操作】列
+        function formatOtherOperationColumn(value,row,index){
+            var btn = "<a id='insertRowBtn" + index + "' class='insertRowBtn' onclick='insertRow("+JSON.stringify(row) +"," + index+")' href='javascript:void(0)'>插入</a> \
+                    <a id='editRowBtn" + index + "' class='editRowBtn' onclick='editRow(" + row.id +"," + index+")' href='javascript:void(0)'>修改</a>\
+                    <a id='deleteRowBtn" + index + "' class='deleteRowBtn' onclick='removeRow(\"Global_variable_setting\"," + row.id +"," + index+")' href='javascript:void(0)'>删除</a>\
+                    <a id='moveUpBtn" + index + "' class='moveUpBtn' onclick='moveRow(\"Global_variable_setting\"," + index+", this)' href='javascript:void(0)'>上移</a> \
+                    <a id='moveDownBtn" + index + "' class='moveDownBtn' onclick='moveRow(\"Global_variable_setting\"," + index+", this)' href='javascript:void(0)'>下移</a> \
+                    <a id='saveRowBtn" + index + "' class='saveRowBtn' onclick='saveRow()' \
+                     href='javascript:void(0)' style='display:none'>保存</a>\
+                    <a id='cancelEditRowBtn" + index + "' class='cancelEditRowBtn' onclick='cancelEditRow(this)' \
+                    href='javascript:void(0)' style='display:none'>取消</a>"; 
+            return btn;
+        }
+
+        // 编辑时隐藏部分按钮
+        function hideNoneEditBtn(editIndex) {
+            $('#insertRowBtn' + editIndex).hide();
+            $('#editRowBtn' + editIndex).hide();
+            $('#deleteRowBtn' + editIndex).hide();
+            $('#moveUpBtn' + editIndex).hide();
+            $('#moveDownBtn' + editIndex).hide();         
+            $('.saveRowBtn').linkbutton({text:'保存', plain:true, iconCls:'icon-ok'});
+            $('.cancelEditRowBtn').linkbutton({text:'取消', plain:true, iconCls:'icon-cancel'});
+            $('#saveRowBtn' + editIndex).show();
+            $('#cancelEditRowBtn' + editIndex).show();
+        }
+
+        // 点击表格“插入|新增”按钮事件函数实现
+        function insertRow(row, rowIndex) { 
+            if (endEditing()) { 
+               if (rowIndex == undefined) { // 点击 新增 按钮
+                    editIndex = 0; 
+                    order = '';
+                } else { // 点击 插入 按钮
+                    editIndex = rowIndex + 1;
+                    order = row.order
+                }     
+                                
+            
+                $('#Global_variable_setting').datagrid('insertRow',{
+                    index: editIndex, 
+                    row: { }
+                });
+
+                hideNoneEditBtn(editIndex);
+            
+                $('#Global_variable_setting').datagrid('unselectAll');      
+                var row = $('#Global_variable_setting').datagrid('selectRow', editIndex);
+                $(row).datagrid('beginEdit', editIndex);
+
+  
+                // // 设置项目类型，默认为 UI项目
+                $(row).datagrid('getEditor', {index: editIndex, field: 'project_type'}).target.combobox('setValue', 'API项目');
+
+                // 设置所属环境，默认为测试环境
+                $(row).datagrid('getEditor', {index: editIndex, field: 'environment'}).target.combobox('setText', '测试环境');
+
+                // 初始化combobbox 下拉列表值
+                initDataForCombobox('API项目', '新增');
+                ifInsert = true;
+            }  
+        }
+     
+        // 初始化项目 combobox的值
+        function initDataForCombobox(projectType, flag) {
+            var projectEditor =  $('#Global_variable_setting').datagrid('getEditor', {index: editIndex, field: 'project_name'});
+            
+            // 初始化项目combobox下拉列表
+            if (projectType == 'UI项目') {
+                projectType = 'UIProject';
+            } else if(projectType == 'API项目'){
+                projectType = 'APIProject';
+            } else {
+                return;
+            }
+
+            getProjects(projectType).then(function(jsonData) { 
+                if (jsonData['result'] == 'success') {
+                    if(flag == '新增' || flag == '切换项目类型') {
+                        $(projectEditor.target).combobox('clear');
+                        $(projectEditor.target).combobox('loadData', {'id':0, 'choice':''});
+                    }
+                    $(projectEditor.target).combobox('loadData', jsonData['data']);
+                } else {
+                    $.messager.alert('错误信息', '获取项目失败：' + jsonData['data'], 'error');                 
+                }
+            });           
+        }
+
+
+        // 点击 保存 按钮的函数实现
+        function saveRow(){
+            if (editIndex == undefined) {
+                $.messager.alert('提示', '操作失败，没有正在编辑的记录', 'info');
+                return;
+            } 
+            if ($('#Global_variable_setting').datagrid('validateRow', editIndex)){
+                $('#Global_variable_setting').datagrid('endEdit', editIndex);
+                var isValid = true;
+                if (name == '') {
+                    $.messager.alert('提示','保存失败，变量名不能为空', 'warnging');
+                    isValid=false;
+                } else if (name.toLowerCase().indexOf('global_') != 0) {
+                    $.messager.alert('提示', '保存失败，变量名称必须以“global_”开头');
+                    isValid = false;
+                } else if (value == '') {
+                    $.messager.alert('提示','保存失败，变量值不能为空', 'warnging');
+                    isValid=false; 
+                } else if (project_name == '') {
+                    $.messager.alert('提示','保存失败，所属项目不能为空', 'warnging');
+                    isValid=false;  
+                }  
+                if (!isValid) {
+                    ifInsert = undefined;
+                    editIndex = undefined;
+                    onLoadSuccess();
+                    $('#Global_variable_setting').datagrid('reload');
+                    return;                    
+                }
+                
+                if (ifInsert == true) { // 新增
+                    var url = '/action/addGlobalVarSetting';
+                    var params = { 
+                        name:name,
+                        value:value,
+                        environment:environment,
+                        project_type:project_type,
+                        project_name:project_name,
+                        project_id:project_id,
+                        order:order
+                    };
+                } else if (ifInsert == false) { // 修改
+                    var url = '/action/editGlobalVarSetting';
+                    var params = {
+                        id:ID,
+                        name:name,
+                        value:value,
+                        environment:environment,
+                        project_type:project_type,
+                        project_name:project_name,                       
+                        project_id:project_id
+                    };
+                }
+
+                $.post(url, params, function(data,status){
+                        if (data == 'success') {
+                            $.messager.alert('提示','保存成功', 'info');
+                        } else {
+                            $.messager.alert('错误', '保存失败: ' + data, 'error');
+                        }
+                        $('#Global_variable_setting').datagrid('reload');        
+                    }
+                ); 
+            } else {
+                $.messager.alert('告警', '保存失败,请检查是否设置必填(必选)项', 'error');
+                $('#Global_variable_setting').datagrid('reload');
+            }
+
+            ifInsert = undefined;
+            editIndex = undefined; 
+            project_id = -1
+            onLoadSuccess();
+        }
+
+        // 点击 取消 按钮的函数实现
+        function cancelEditRow() {
+            if (editIndex == undefined) {
+                $.messager.alert('提示', '操作失败，没有正在编辑的记录', 'info');
+                return;
+            } 
+            $('#Global_variable_setting').datagrid('endEdit', editIndex);             
+            $('#Global_variable_setting').datagrid('reload', editIndex);
+         
+            ifInsert = undefined;
+            editIndex = undefined;
+            project_id = -1
+            onLoadSuccess();                       
+        }
+ 
+        // 结束编辑
+        function endEditing(){
+            if (editIndex == undefined) {
+                return true;
+            } else {
+                $.messager.alert('提示', '您还有记录未保存', 'warnging');
+                return false;
+            }
+        }
+
+        // 结束编辑时自动触发的事件函数实现
+        function onEndEdit(index, row) {
+            // 获取单元格中输入的内容
+            name = $(this).datagrid('getEditor', {index: index,field: 'name'}).target.val();
+            name = name.replace(' ', '').replace('-', ''); // 如果用户输入了空格或者 -，替换为空
+            value = $(this).datagrid('getEditor', {index: index,field: 'value'}).target.val();     
+            project_type = $(this).datagrid('getEditor', {index: index,field: 'project_type'}).target.combobox('getText');
+            project_name = $(this).datagrid('getEditor', {index: index,field: 'project_name'}).target.combobox('getText');
+            environment = $(this).datagrid('getEditor', {index: index,field: 'environment'}).target.combobox('getText');
+        }
+
+        // 点击表格 修改 按钮的函数实现
+        function editRow(rowID, index){
+            if (endEditing()) { 
+                if (index == undefined) { // 点击表格上方的 修改 按钮
+                    //获取选中行的数据  
+                    var rowsSelected = $('#Global_variable_setting').datagrid('getSelections');
+                    if (rowsSelected.length < 1) {  //如果没有选中行，提示信息  
+                        $.messager.alert("提示消息", "请选择要修改的记录！", 'info');  
+                        return;  
+                    } else if (rowsSelected.length > 1) {
+                        $.messager.alert("提示信息", "每次只能选择一条记录！", 'info');
+                        return;
+                    }
+                    editIndex = $('#Global_variable_setting').datagrid('getRowIndex', rowsSelected[0]);
+                    ID = rowsSelected[0].id;
+                } else { // 点击记录行所在的 修改 按钮
+                    ID = rowID;
+                    editIndex = index;
+                }
+
+                hideNoneEditBtn(editIndex);  
+
+                $('#Global_variable_setting').datagrid('unselectAll');           
+                var row = $('#Global_variable_setting').datagrid('selectRow', editIndex);
+                $(row).datagrid('beginEdit', editIndex);
+
+
+
+                
+                var projectTypeEditor = $('#Global_variable_setting').datagrid('getEditor', {index: editIndex, field:'project_type'});
+                // 获取项目类型
+                var projectType = projectTypeEditor.target.combobox('getText');
+                // 初始化combobox的data
+                initDataForCombobox(projectType, '修改');
+
+                ifInsert = false;              
+            }  
+        }
+
+        //选择所属项目下拉列表项时触发事件
+        function onSelectForProjectCombobox(row) {
+            project_id = row.id;                                 
+
+        }      
+
+        function onSelectForProjectTypeCombobox(row){
+            project_type = row.choice;
+            if (project_type == '') { //通过这个判断，控制初始化顺序带来的字段不识别问题
+                return;
+            }
+            // 初始化项目combobox下拉列表// 暂时不管是UI项目还是API项目，统一从UI项目配置表中读取
+            initDataForCombobox(project_type, '切换项目类型');  
+  
+        }  
+    </script>
+</head>
+<body>
+    <table class="easyui-datagrid" rownumbers="true" pagination="true" id="Global_variable_setting"
+        data-options="border:false,
+        singleSelect:false,
+        fit:true,
+        fitColumns:false,
+        collapsible: true,
+        toolbar: toolbar, 
+        rownumbers: true,
+        pageSize: 25,    
+        pageList: [25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100],           
+        url: '/action/loadGlobalVarSettings',
+        method: 'get',
+        onEndEdit:onEndEdit,
+        onLoadSuccess:onLoadSuccess"> 
+        <thead>
+            <tr>
+                <th data-options="field:'ck',checkbox:true"></th>
+                <th data-options="field:'id', align: 'center', fitColumns:true">ID</th>
+                <th data-options="field:'name', align: 'left', editor:{type:'text', options:{required:true}}" 
+                width="150px">变量名</th>
+                <th data-options="field:'value', align: 'left', editor:{type:'text', options:{required:true}}" 
+                width="700px">变量值</th>               
+                <th data-options="field:'project_type', align: 'center', editor:{
+                        type:'combobox',
+                        options:{
+                            valueField:'id',
+                            textField:'choice',
+                            required:true,
+                            data:[{id:1, choice:'UI项目'},{id:2, choice:'API项目'}],
+                            editable:false,
+                            panelHeight:'auto',
+                            onSelect: onSelectForProjectTypeCombobox
+                        }}" width="70px">项目类型</th>  
+                <th data-options="field:'project_name', align: 'left', editor:{
+                        type:'combobox',
+                        options:{
+                            valueField:'id',
+                            textField:'choice',
+                            required:true,
+                            editable:true,
+                            panelHeight:'auto',
+                            onSelect: onSelectForProjectCombobox,     
+                            onHidePanel:onHidePanelForCombobox,                   
+                            onChange:onChangeForCombobox
+                        }}" width="200px">所属项目</th>
+                <th data-options="field:'environment', align: 'center', editor:{
+                        type:'combobox',
+                        options:{
+                            valueField:'id',
+                            textField:'choice',
+                            required:true,
+                            editable:false,
+                            panelHeight:'auto',
+                            data:[{id:0, choice:'测试环境'},{id:1, choice:'预发布环境'}, {id:2, choice:'生产环境'}]
+                        }}" width="110px">所属环境</th>                        
+                <th data-options="field:'order', align: 'center'" width='50px'>顺序</th>    
+                <th data-options="field:'operations', title:'操作', align: 'center',
+                    formatter:function(value,row,index){return formatOtherOperationColumn(value,row,index);}"  
+                    width="300px">操作</th>   
+            </tr>
+        </thead> 
+    </table>
+
+    <!--增加工具条-->
+   <script type="text/javascript">
+       var toolbar = addToolbar('Global_variable_setting'); 
+   </script>   
+</body>
+</html>

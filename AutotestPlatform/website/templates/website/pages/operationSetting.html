@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    {% load staticfiles %}
+    <!--引入JQuery-->
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery-3.2.1.min.js' %}"></script> 
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery.easyui.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery.min.js' %}"></script>      
+    <script type="text/javascript" src="{% static 'website/js/common.js' %}"></script>    
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/locale/easyui-lang-zh_CN.js' %}"></script> 
+    <link rel="stylesheet" type="text/css" href="{% static  'website/jquery-easyui/themes/default/easyui.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'website/jquery-easyui/themes/icon.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'website/jquery-easyui/demo/demo.css' %}">
+    <script>
+     
+        var ifInsert = undefined; // 用于标记行是否是新增还是修改
+        var editIndex = undefined;     // 用于存储正在编辑行的索引
+        var ID = undefined;     // 存放行自增ID
+
+        // 用于存储记录行中处于编辑，还未保存的值
+        var object_type = undefined;  //对象类型
+        var operation = undefined;  //操作
+        var environment = undefined;  //所属环境
+        var valid_flag = undefined;  //是否启用
+        var order = undefined; // 顺序
+
+        function onLoadSuccess(data) {
+            // 修改“操作”列的按钮样式
+            $('.insertRowBtn').linkbutton({text:'插入', plain:true, iconCls:'icon-add'});
+            $('.editRowBtn').linkbutton({text:'修改', plain:true, iconCls:'icon-edit'});
+            $('.deleteRowBtn').linkbutton({text:'删除', plain:true, iconCls:'icon-remove'});
+            $('.moveUpBtn').linkbutton({text:'上移', plain:true, iconCls:'icon-edit'});
+            $('.moveDownBtn').linkbutton({text:'下移', plain:true, iconCls:'icon-edit'}); 
+
+            $('.saveRowBtn').hide();
+            $('.cancelEditRowBtn').hide(); 
+
+            editIndex = undefined;
+            // 设置自动调整行高(主要是解决行号所在单元格和数据行错位问题)
+            $('#Operation_for_object').datagrid('fixRowHeight');
+        }
+
+        // 格式化【操作】列
+        function formatOtherOperationColumn(value,row,index){
+            var btn = "<a id='insertRowBtn" + index + "' class='insertRowBtn' onclick='insertRow("+JSON.stringify(row) +"," + index+")' href='javascript:void(0)'>插入</a> \
+                    <a id='editRowBtn" + index + "' class='editRowBtn' onclick='editRow(" + row.id +"," + index+")' \
+                    href='javascript:void(0)'>修改</a>\
+                    <a id='deleteRowBtn" + index + "' class='deleteRowBtn' onclick='removeRow(\"Operation_for_object\"," + row.id +"," + index+")' href='javascript:void(0)'>删除</a>\
+                    <a id='moveUpBtn" + index + "' class='moveUpBtn' onclick='moveRow(\"Operation_for_object\"," + index+", this)' href='javascript:void(0)'>上移</a> \
+                    <a id='moveDownBtn" + index + "' class='moveDownBtn' onclick='moveRow(\"Operation_for_object\"," + index+", this)' href='javascript:void(0)'>下移</a> \
+                    <a id='saveRowBtn" + index + "' class='saveRowBtn' onclick='saveRow()' \
+                     href='javascript:void(0)' style='display:none'>保存</a>\
+                    <a id='cancelEditRowBtn" + index + "' class='cancelEditRowBtn' onclick='cancelEditRow(this)' \
+                    href='javascript:void(0)' style='display:none'>取消</a>"; 
+            return btn;
+        }
+
+
+        // 编辑时隐藏部分按钮
+        function hideNoneEditBtn(editIndex) {
+            $('#insertRowBtn' + editIndex).hide();
+            $('#editRowBtn' + editIndex).hide();
+            $('#deleteRowBtn' + editIndex).hide();
+            $('#moveUpBtn' + editIndex).hide();
+            $('#moveDownBtn' + editIndex).hide();         
+            $('.saveRowBtn').linkbutton({text:'保存', plain:true, iconCls:'icon-ok'});
+            $('.cancelEditRowBtn').linkbutton({text:'取消', plain:true, iconCls:'icon-cancel'});
+            $('#saveRowBtn' + editIndex).show();
+            $('#cancelEditRowBtn' + editIndex).show();
+        }
+
+        // 点击表格“插入|新增”按钮事件函数实现
+        function insertRow(row, rowIndex) { 
+            if (endEditing()) { 
+               if (rowIndex == undefined) { // 点击 新增 按钮
+                    editIndex = 0; 
+                    order = '';
+                } else { // 点击 插入 按钮
+                    editIndex = rowIndex + 1;
+                    order = row.order
+                }     
+                                
+            
+                $('#Operation_for_object').datagrid('insertRow',{
+                    index: editIndex, 
+                    row: { }
+                });
+
+                hideNoneEditBtn(editIndex);
+            
+                $('#Operation_for_object').datagrid('unselectAll');  
+                var row = $('#Operation_for_object').datagrid('selectRow', editIndex);
+                $(row).datagrid('beginEdit', editIndex);
+
+                $(row).datagrid('getEditor', {index: editIndex,field: 'object_type'}).target.combobox('setText', '页面元素');
+                ifInsert = true;
+            }                
+        }
+      
+
+        // 点击 保存 按钮的函数实现
+        function saveRow(){
+            if (editIndex == undefined) {
+                $.messager.alert('提示', '操作失败，没有正在编辑的记录', 'info');
+                return;
+            } 
+            if ($('#Operation_for_object').datagrid('validateRow', editIndex)){
+                $('#Operation_for_object').datagrid('endEdit', editIndex);
+                if (operation == '') {
+                    $.messager.alert('提示','保存失败，可执行操作不能为空', 'warnging'); 
+                    ifInsert = undefined;
+                    editIndex = undefined;
+                    onLoadSuccess();
+                    $('#Operation_for_object').datagrid('reload');
+                    return;  
+                }        
+              
+                if (ifInsert == true) { // 新增
+                    var url = '/action/addOperationSetting';
+                    var params = {   
+                        object_type:object_type,
+                        operation:operation,
+                        environment:environment,
+                        valid_flag:valid_flag,
+                        order:order
+                    };
+                } else if (ifInsert == false) { // 修改
+                    var url = '/action/editOperationSetting';
+                    var params = {
+                        id:ID,
+                        object_type:object_type,
+                        operation:operation,
+                        environment:environment,
+                        valid_flag:valid_flag
+                    };
+                }
+
+                $.post(url, params, function(data,status){
+                        if (data == 'success') {
+                            $.messager.alert('提示','保存成功', 'info');
+                        } else {
+                            $.messager.alert('错误', '保存失败: ' + data, 'error');
+                        }
+                        $('#Operation_for_object').datagrid('reload');        
+                    }
+                ); 
+            } else {
+                $.messager.alert('告警', '保存失败,请检查是否设置必填(必选)项', 'error');
+                $('#Operation_for_object').datagrid('reload');
+            }
+
+            ifInsert = undefined;
+            editIndex = undefined; 
+            onLoadSuccess();
+        }
+
+        // 点击 取消 按钮的函数实现
+        function cancelEditRow() {
+            if (editIndex == undefined) {
+                $.messager.alert('提示', '操作失败，没有正在编辑的记录', 'info');
+                return;
+            } 
+            $('#Operation_for_object').datagrid('endEdit', editIndex);             
+            $('#Operation_for_object').datagrid('reload', editIndex);
+         
+            ifInsert = undefined;
+            editIndex = undefined;
+            onLoadSuccess();                       
+        }
+ 
+        // 结束编辑
+        function endEditing(){
+            if (editIndex == undefined) {
+                return true;
+            } else {
+                $.messager.alert('提示', '您还有记录未保存', 'warnging');
+                return false;
+            }
+        }
+
+        // 结束编辑时自动触发的事件函数实现
+        function onEndEdit(index, row) {
+            // 获取单元格中输入的内容
+            operation = $(this).datagrid('getEditor', {index: index,field: 'operation'}).target.val();
+            object_type = $(this).datagrid('getEditor', {index: index,field: 'object_type'}).target.combobox('getText');
+
+        }
+
+        // 点击表格 修改 按钮的函数实现
+        function editRow(rowID, index){
+            if (endEditing()) { 
+                if (index == undefined) { // 点击表格上方的 修改 按钮
+                    //获取选中行的数据  
+                    var rowsSelected = $('#Operation_for_object').datagrid('getSelections');
+                    if (rowsSelected.length < 1) {  //如果没有选中行，提示信息  
+                        $.messager.alert("提示消息", "请选择要修改的记录！", 'info');  
+                        return;  
+                    } else if (rowsSelected.length > 1) {
+                        $.messager.alert("提示信息", "每次只能选择一条记录！", 'info');
+                        return;
+                    }
+                    editIndex = $('#Operation_for_object').datagrid('getRowIndex', rowsSelected[0]);
+                    ID = rowsSelected[0].id;
+                } else { // 点击记录行所在的 修改 按钮
+                    ID = rowID;
+                    editIndex = index;
+                }
+
+                hideNoneEditBtn(editIndex);  
+                
+                $('#Operation_for_object').datagrid('unselectAll');        
+                var row = $('#Operation_for_object').datagrid('selectRow', editIndex);
+                $(row).datagrid('beginEdit', editIndex);
+
+                ifInsert = false;              
+            }  
+        }
+
+
+        // commbox输入框的值改变时触发事件
+        function onChangeForCombobox(newValue, oldValue) {
+            textChanged = true;
+        }   
+
+    </script>
+</head>
+<body>
+  
+    <!--环境名称列表-->
+    <table class="easyui-datagrid" rownumbers="true" pagination="true" id="Operation_for_object"
+        data-options="border:false,
+        singleSelect:false,
+        fit:true,
+        fitColumns:false,
+        collapsible: true,
+        toolbar: toolbar, 
+        rownumbers: true,
+        pageSize: 25,    
+        pageList: [25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100],       
+        url: '/action/loadOperationSettings',
+        method: 'get',
+        onEndEdit:onEndEdit,
+        onLoadSuccess:onLoadSuccess"> 
+        <thead>
+            <tr>
+                <th data-options="field:'ck',checkbox:true"></th>
+                <th data-options="field:'id', align: 'center', fitColumns:true">ID</th>
+                <th data-options="field:'object_type', align: 'center', editor:{
+                        type:'combobox',
+                        options:{
+                            valueField:'id',
+                            textField:'objectType',
+                            required:true,
+                            editable:false,
+                            panelHeight:'auto',
+                            data:[{id:0, objectType:'页面元素'},{id:1, objectType:'数据库'}]
+                        }}" width="100px">对象类型</th>
+                <th data-options="field:'operation', align: 'left', editor:{type:'text', options:{required:true}}" width="300px">可执行操作</th>
+                <th data-options="field:'order', align: 'center'" width='50px'>顺序</th>    
+                <th data-options="field:'operations', title:'操作', align: 'center',
+                    formatter:function(value,row,index){return formatOtherOperationColumn(value,row,index);}"  
+                    width="300px">操作</th>   
+            </tr>
+        </thead> 
+    </table>
+
+    <!--增加工具条-->
+   <script type="text/javascript">
+       var toolbar = addToolbar('Operation_for_object'); 
+   </script>   
+</body>
+</html>

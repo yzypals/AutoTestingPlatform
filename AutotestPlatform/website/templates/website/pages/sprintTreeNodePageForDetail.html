@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    {% load staticfiles %}
+    <!--引入JQuery-->
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery-3.2.1.min.js' %}"></script> 
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery.easyui.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery.min.js' %}"></script>     
+    <script type="text/javascript" src="{% static 'website/js/common.js' %}"></script>   
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/locale/easyui-lang-zh_CN.js' %}"></script> 
+    <link rel="stylesheet" type="text/css" href="{% static  'website/jquery-easyui/themes/default/easyui.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'website/jquery-easyui/themes/icon.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'website/jquery-easyui/demo/demo.css' %}">
+    <script>
+        var ifInsert = undefined; // 用于标记行是否是新增还是修改
+        var editIndex = undefined;     // 用于存储正在编辑行的索引
+        var ifInsertByRowAddBtn = undefined; // 用于标记是否通过点击行记录的插入按钮产生的编辑
+ 
+        var requirementID = undefined;     // 用于存放需求任务ID
+
+        // 用于存储记录行中处于编辑，还未保存的值
+        var requirement = undefined;  //需求任务
+        var person_in_charge = undefined; //测试负责人
+        var sub_task = undefined;  //子任务
+        var time_took = undefined; //预估耗时
+        var weekday1 = undefined;  //周一的进度
+        var weekday2 = undefined;
+        var weekday3 = undefined;
+        var weekday3 = undefined;
+        var weekday4 = undefined;
+        var weekday5 = undefined;
+        var weekday6 = undefined;
+        var weekday7 = undefined;
+        var next_weekday1 = undefined;
+        var order = undefined;
+    
+        function onLoadSuccess(data) {
+            // 修改“操作”列的按钮样式
+            $('.insertRowBtn').linkbutton({text:'插入', plain:true, iconCls:'icon-add'});
+             $('.copyRowBtn').linkbutton({text:'复制', plain:true, iconCls:'icon-add'});
+            $('.editRowBtn').linkbutton({text:'修改', plain:true, iconCls:'icon-edit'});
+            $('.deleteRowBtn').linkbutton({text:'删除', plain:true, iconCls:'icon-remove'});
+            $('.moveUpBtn').linkbutton({text:'上移', plain:true, iconCls:'icon-edit'});
+            $('.moveDownBtn').linkbutton({text:'下移', plain:true, iconCls:'icon-edit'}); 
+
+            $('.saveRowBtn').hide();
+            $('.cancelEditRowBtn').hide(); 
+            if (data) {
+                var mark=1;               //mark标记需要合并的单元格数
+                var flag=1;
+　　　　        for (var i=1; i <data.rows.length; i++) {     //这里循环表格当前的数据
+    　　　　　　    if (data.rows[i]['requirement'] == data.rows[i-1]['requirement']) {  //相邻两行的值相同则表表示就需要合并
+    　　　　　　　　     mark += 1;                                            
+    　　　　　　　　     $(this).datagrid('mergeCells',{
+    　　　　　　　　　　    index: i+1-mark,       //datagrid的index，表示从第几行开始合并；
+    　　　　　　　　　　    field: 'requirement',   //需要合并的单元格所在的列、行
+    　　　　　　　　　　    rowspan:mark     //需要合并的单元格数(纵向)，如果想要横向合并，就使用colspan：mark
+    　　　　　　　　    });
+                    } else {
+                        mark = 1;
+                    }
+                    if (data.rows[i]['requirement'] == data.rows[i-1]['requirement'] &&
+                        data.rows[i]['person_in_charge'] == data.rows[i-1]['person_in_charge']) {  //
+    　　　　　　　　    flag += 1;                                            
+    　　　　　　　　    $(this).datagrid('mergeCells',{
+    　　　　　　　　　　    index: i+1-flag,       
+    　　　　　　　　　　    field: 'person_in_charge',
+    　　　　　　　　　　    rowspan:flag    
+    　　　　　　　　    });
+    　　　　　　     } else {
+    　　　　　　　　     flag = 1; 
+    　　　　　　     }
+                } 　　　　       
+　　       } 
+
+            editIndex = undefined;
+            // 设置自动调整行高(主要是解决行号所在单元格和数据行错位问题)
+            $('#TestTaskDetail').datagrid('fixRowHeight');
+        }
+
+        // 编辑时隐藏部分按钮
+        function hideNoneEditBtn(editIndex) {
+            $('#insertRowBtn' + editIndex).hide();
+            $('#copyRowBtn' + editIndex).hide();
+            $('#editRowBtn' + editIndex).hide();
+            $('#deleteRowBtn' + editIndex).hide();
+            $('#moveUpBtn' + editIndex).hide();
+            $('#moveDownBtn' + editIndex).hide();
+            $('.saveRowBtn').linkbutton({text:'保存', plain:true, iconCls:'icon-ok'});
+            $('.cancelEditRowBtn').linkbutton({text:'取消', plain:true, iconCls:'icon-cancel'});
+            $('#saveRowBtn' + editIndex).show();
+            $('#cancelEditRowBtn' + editIndex).show();
+        }
+        
+        // 格式化【操作】列
+        function formatOperationColumn(value,row,index){
+                var btn = "<a id='insertRowBtn" + index + "' class='insertRowBtn' onclick='insertRow("+JSON.stringify(row) +"," + index+")' href='javascript:void(0)'>插入</a> \
+                    <a id='copyRowBtn" + index + "' class='copyRowBtn' onclick='copyRow("+JSON.stringify(row) +"," + index+")' href='javascript:void(0)'>复制</a> \
+                    <a id='editRowBtn" + index + "' class='editRowBtn' onclick='editRow(" + row.id +"," + index+")' \
+                    href='javascript:void(0)'>修改</a>\
+                    <a id='deleteRowBtn" + index + "' class='deleteRowBtn' onclick='removeRow(\"#TestTaskDetail\"," + row.id +"," + index+")' href='javascript:void(0)'>删除</a>\
+                    <a id='moveUpBtn" + index + "' class='moveUpBtn' onclick='moveRow("+index+", this)' \
+                    href='javascript:void(0)'>上移</a> \
+                    <a id='moveDownBtn" + index + "' class='moveDownBtn' onclick='moveRow("+index+", this)' \
+                    href='javascript:void(0)'>下移</a> \
+                    <a id='saveRowBtn" + index + "' class='saveRowBtn' onclick='saveRow()' \
+                     href='javascript:void(0)' style='display:none'>保存</a>\
+                    <a id='cancelEditRowBtn" + index + "' class='cancelEditRowBtn' onclick='cancelSaveRow(this)' \
+                    href='javascript:void(0)' style='display:none'>取消</a>"; 
+                return btn;
+        }
+        
+        // 刷新行，用于解决合并单元格后，插入，编辑等错位问题
+        function refreshRow(){
+            var rows = $('#TestTaskDetail').datagrid('getRows'); 
+            for (var i=1; i <rows.length; i++) {
+    　　　　　　    if (rows[i]['requirement'] == rows[i-1]['requirement']) {  //相邻两行的值相同则表表示就需要合并
+    　　　　　　　　    $('#TestTaskDetail').datagrid('refreshRow',i);
+                        $('#TestTaskDetail').datagrid('refreshRow',i-1); 
+    　　　　　　     }
+ 　　　　       }
+            onLoadSuccess();
+        }
+
+        // 点击表格“插入|新增”按钮事件函数实现
+        function insertRow(row, rowIndex) { 
+            refreshRow();
+            if (endEditing()) { 
+
+                if (rowIndex == undefined) { // 点击 新增 按钮
+                    editIndex = 0; 
+                    ifInsertByRowAddBtn = false;
+                    order = '';
+                } else { // 点击 插入 按钮
+                    editIndex = rowIndex + 1;
+                    ifInsertByRowAddBtn = true;
+                    order = row.order
+                }  
+                
+                
+            
+                $('#TestTaskDetail').datagrid('insertRow',{
+                    index: editIndex, 
+                    row: { }
+                });
+
+                hideNoneEditBtn(editIndex);
+            
+                $('#promble_feedback').datagrid('unselectAll');  
+                var row = $('#TestTaskDetail').datagrid('selectRow', editIndex);
+                $(row).datagrid('beginEdit', editIndex);
+                ifInsert = true;
+            }                
+        }
+
+
+        // 点击表格“插入|新增”按钮事件函数实现
+        function copyRow(row, rowIndex) { 
+            if (endEditing()) { 
+                editIndex = rowIndex + 1;
+                params = {
+                    requirement:row.requirement,
+                    person_in_charge:row.person_in_charge,
+                    sub_task:row.sub_task,
+                    time_took:row.time_took,
+                    weekday1:row.weekday1,
+                    weekday2:row.weekday2,
+                    weekday3:row.weekday3,       
+                    weekday4:row.weekday4,
+                    weekday5:row.weekday5,
+                    weekday6:row.weekday6,
+                    weekday7:row.weekday7,
+                    next_weekday1:row.next_weekday1,
+                    order:row.order
+                };
+
+                $('#TestTaskDetail').datagrid('insertRow',{
+                    index: editIndex, 
+                    row: params
+                });
+                onLoadSuccess();              
+                url = '/pages/addTestDetailTask';
+                   
+                $.post(url, params, function(data,status){
+                        if (data == 'success') {
+                            $.messager.alert('提示','保存成功', 'info');
+                        } else {
+                            $.messager.alert('错误', '保存失败: ' + data, 'error');
+                        }
+                        $('#TestTaskDetail').datagrid('reload');        
+                    }
+                ); 
+            } else {
+                $.messager.alert('错误', '保存失败', 'error');
+                $('#TestTaskDetail').datagrid('reload');
+            }
+
+            editIndex = undefined;        
+        }  
+        
+
+       
+        // 点击 保存 按钮的函数实现
+        function saveRow(){
+            if (editIndex == undefined) {
+                $.messager.alert('提示', '操作失败，没有正在编辑的记录', 'info');
+                return;
+            } 
+            if ($('#TestTaskDetail').datagrid('validateRow', editIndex)){
+                $('#TestTaskDetail').datagrid('endEdit', editIndex);
+      
+                if (requirement == '') {
+                    $.messager.alert('提示','保存失败，需求任务不能为空', 'warnging');
+                    ifInsert = undefined;
+                    editIndex = undefined;
+                    onLoadSuccess();
+                    $('#TestTaskDetail').datagrid('reload');
+                    return;
+                } else if (time_took != '' && isNaN(time_took)){
+                    $.messager.alert('提示', '保存失败，预估耗时只能为数字', 'warnging');
+                    ifInsert = undefined;
+                    editIndex = undefined;
+                    onLoadSuccess();
+                    $('#TestTaskDetail').datagrid('reload');
+                    return;                
+                }
+
+                // var row = $('#TestTaskDetail').datagrid('selectRow', editIndex);
+                // if (row){
+                //     $.messager.alert('Info', row.elementName+":"+row.selector1+":"+row.order);
+                // }
+                var url = '';
+                var params = {};
+                if (ifInsert == true) { // 新增
+                    url = '/pages/addTestDetailTask';
+                    params = {   
+                        requirement:requirement,
+                        person_in_charge:person_in_charge,
+                        sub_task:sub_task, 
+                        time_took:time_took,
+                        weekday1:weekday1,
+                        weekday2:weekday2, 
+                        weekday3:weekday3,
+                        weekday4:weekday4,
+                        weekday5:weekday5,
+                        weekday6:weekday6,
+                        weekday7:weekday7,
+                        next_weekday1:next_weekday1,
+                        person_in_charge:person_in_charge,
+                        order:order
+                    };
+                } else if (ifInsert == false) { // 修改
+                    url = '/pages/updateTestDetailTask';
+                    params = {
+                        id:requirementID,
+                        requirement:requirement,
+                        person_in_charge:person_in_charge,
+                        sub_task:sub_task, 
+                        time_took:time_took,
+                        weekday1:weekday1,
+                        weekday2:weekday2, 
+                        weekday3:weekday3,
+                        weekday4:weekday4,
+                        weekday5:weekday5,
+                        weekday6:weekday6,
+                        weekday7:weekday7,
+                        next_weekday1:next_weekday1,
+                        person_in_charge:person_in_charge
+                    };
+                }
+
+                $.post(url, params, function(data,status){
+                        if (data == 'success') {
+                            $.messager.alert('提示','保存成功', 'info');
+                        } else {
+                            $.messager.alert('错误', '保存失败: ' + data, 'error');
+                        }
+                        $('#TestTaskDetail').datagrid('reload');        
+                    }
+                ); 
+            } else {
+                $.messager.alert('告警', '保存失败', 'error');
+                $('#TestTaskDetail').datagrid('reload');
+            }
+
+            ifInsert = undefined;
+            editIndex = undefined; 
+            ifInsertByRowAddBtn = undefined;
+            onLoadSuccess();
+        }
+
+        // 点击 取消 按钮的函数实现
+        function cancelSaveRow() {
+            $('#TestTaskDetail').datagrid('endEdit', editIndex);             
+            $('#TestTaskDetail').datagrid('reload', editIndex);
+         
+            ifInsert = undefined;
+            editIndex = undefined;
+            ifInsertByRowAddBtn = undefined;
+            onLoadSuccess();                       
+        }
+ 
+          // 结束编辑
+        function endEditing(){
+            if (editIndex == undefined) {
+                return true;
+            } else {
+                $.messager.alert('提示', '您还有记录未保存', 'warnging');
+                return false;
+            }
+        }
+
+        // 结束编辑时自动触发的事件函数实现
+        function onEndEdit(index, row) {
+            // 获取单元格中输入的内容
+            requirement = $(this).datagrid('getEditor', {index: index,field: 'requirement'}).target.val();
+            person_in_charge = $(this).datagrid('getEditor', {index: index,field: 'person_in_charge'}).target.val();
+            sub_task = $(this).datagrid('getEditor', {index: index,field: 'sub_task'}).target.val();
+            time_took = $(this).datagrid('getEditor', {index: index,field: 'time_took'}).target.val();
+            weekday1 = $(this).datagrid('getEditor', {index: index,field: 'weekday1'}).target.val();
+            weekday2 = $(this).datagrid('getEditor', {index: index,field: 'weekday2'}).target.val();
+            weekday3 = $(this).datagrid('getEditor', {index: index,field: 'weekday3'}).target.val();
+            weekday4 = $(this).datagrid('getEditor', {index: index,field: 'weekday4'}).target.val();
+            weekday5 = $(this).datagrid('getEditor', {index: index,field: 'weekday5'}).target.val();
+            weekday6 = $(this).datagrid('getEditor', {index: index,field: 'weekday6'}).target.val();
+            weekday7 = $(this).datagrid('getEditor', {index: index,field: 'weekday7'}).target.val();
+            next_weekday1 = $(this).datagrid('getEditor', {index: index,field: 'next_weekday1'}).target.val();
+        }
+
+        // 点击表格 修改 按钮的函数实现
+        function editRow(rowID, index){
+            refreshRow();       
+
+            if (endEditing()) { 
+                if (index == undefined) { // 点击表格上方的 修改 按钮
+                    //获取选中行的数据  
+                    var rowsSelected = $('#TestTaskDetail').datagrid('getSelections');
+                    if (rowsSelected.length < 1) {  //如果没有选中行，提示信息  
+                        $.messager.alert("提示消息", "请选择要修改的记录！", 'info');  
+                        return;  
+                    } else if (rowsSelected.length > 1) {
+                        $.messager.alert("提示信息", "每次只能选择一条记录！", 'info');
+                        return;
+                    }
+                    editIndex = $('#TestTaskDetail').datagrid('getRowIndex', rowsSelected[0]);
+                    requirementID = rowsSelected[0].id;
+                } else { // 点击记录行所在的 修改 按钮
+                    requirementID = rowID;
+                    editIndex = index;
+                }
+                hideNoneEditBtn(editIndex);  
+         
+                $('#promble_feedback').datagrid('unselectAll');  
+                var row = $('#TestTaskDetail').datagrid('selectRow', editIndex);
+                $(row).datagrid('beginEdit', editIndex);
+                ifInsert = false;                
+            }  
+        }
+            
+        // 上移|下移
+        function moveRow(index, button) {
+            var data = $('#TestTaskDetail').datagrid('getData');
+            if ($.trim($(button).text()) == '上移') { // 需要使用trim，否则不会成功，估计前后有空格
+                if (index == 0) {
+                    $.messager.alert('提示', '已经是第一行了', 'info');
+                    $('#TestTaskDetail').datagrid('reload');  
+                    return;
+                }
+                var rowToUp = data.rows[index]; //待上移的行(当前行)
+                var rowToDown = data.rows[index - 1]; // 待下移的行
+
+                var temp_order = rowToUp.order;
+                rowToUp.order = rowToDown.order;
+                rowToDown.order = temp_order;
+                data.rows[index] = rowToDown;
+                data.rows[index - 1] = rowToUp;
+                // 更新数据库
+                var result = updateRowOrder('{"'+rowToDown.id+'":'+rowToDown.order +',"'+rowToUp.id+'":'+rowToUp.order + '}');
+                if (result){
+                    refreshRow(); //解决错位问题                  
+                }              
+            } else if ($.trim($(button).text()) == '下移') {
+                if (data.rows.length == index +1) { // rows的长度为当前页面记录数
+                    $.messager.alert('提示', '已经是最后一行了', 'info');
+                    $('#TestTaskDetail').datagrid('reload');  
+                    return;
+                }
+                var rowToDown = data.rows[index]; // 待下移的行(当前行)  
+                var rowToUp = data.rows[index+1]; //待上移的行             
+
+                var temp_order = rowToUp.order;
+                rowToUp.order = rowToDown.order;
+                rowToDown.order = temp_order;
+                data.rows[index + 1] = rowToDown;
+                data.rows[index] = rowToUp; 
+                
+                // 更新数据库
+                var result = updateRowOrder('{"'+rowToDown.id+'":'+rowToDown.order +',"'+rowToUp.id+'":'+rowToUp.order + '}');
+                if (result){
+                    refreshRow(); //解决错位问题                  
+                } 
+            }
+            $('#TestTaskDetail').datagrid('reload');       
+        }
+
+        // 更新元素顺序
+        function updateRowOrder(orderDic) {
+            return $.post('/pages/moveTestDetailTask', {
+                orderDic:orderDic
+            },function(data, status){
+                if (data == 'success') {
+                    $.messager.alert('提示', '保存成功', 'info');
+                    return true;
+                } else {
+                    $.messager.alert('提示', '保存失败,请联系管理员', 'error');
+                    return false;
+                }
+
+            });
+        }
+
+        // 样式设置
+        function cellStyler(value,row,index){
+            if (row['progress'] != '100%') {
+                return 'background-color:#ffee00;';
+            } 
+        }   
+    </script>
+</head>
+<body>
+    <!--项目配置名称列表-->
+    <table class="easyui-datagrid" rownumbers="true" pagination="true" id="TestTaskDetail"
+        data-options="border:false,
+        singleSelect:false,
+        fit:true,       
+        collapsible: true,
+        toolbar: toolbar, 
+        rownumbers: true,
+        pageSize: 25,    
+        pageList: [25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100],          
+        nowrap: false,
+        url: '/pages/testDetailTaskDatagrid',
+        method: 'get',
+        onEndEdit:onEndEdit,
+        onLoadSuccess:onLoadSuccess">
+        <thead>
+            <tr>
+                <th data-options="field:'ck',checkbox:true, fitColumns:true" rowspan="2"></th>
+                <th data-options="field:'id', align: 'center', fitColumns:true" rowspan="2">任务ID</th>
+                <th data-options="field:'progress', align: 'center',fitColumns:true" rowspan="2">进度</th>
+                <th data-options="field:'requirement', align: 'left', editor:{type:'text'},fitColumns:true, styler:cellStyler" rowspan="2" width='150px' >需求任务</th>
+                <th data-options="field:'person_in_charge', align: 'center', editor:{type:'text'},fitColumns:true" rowspan="2">测试负责人</th>
+                <th data-options="field:'sub_task', align: 'left', editor:{type:'text'},fitColumns:true,styler:cellStyler" rowspan="2" width='150px' >子任务</th>
+                <th data-options="field:'time_took', align: 'center', editor:{type:'text'},fitColumns:true" rowspan="2">预估耗时(H)</th> 
+                <th colspan="8">每日进度</th>
+                <th data-options="field:'order', align: 'center',fitColumns:true" rowspan="2">顺序</th>                 
+                <th data-options="field:'operation',title:'操作', align: 'center', fitColumns:false,formatter:function(value,row,index){
+                    return formatOperationColumn(value,row,index);
+                    }"  width='360px' rowspan="2">操作</th>                
+            </tr>
+            <tr>
+                <th data-options="field:'weekday1', align: 'center', editor:{type:'text'},fitColumns:true">周一</th> 
+                <th data-options="field:'weekday2', align: 'center', editor:{type:'text'},fitColumns:true">周二</th> 
+                <th data-options="field:'weekday3', align: 'center', editor:{type:'text'},fitColumns:true">周三</th>
+                <th data-options="field:'weekday4', align: 'center', editor:{type:'text'},fitColumns:true">周四</th>
+                <th data-options="field:'weekday5', align: 'center', editor:{type:'text'},fitColumns:true">周五</th> 
+                <th data-options="field:'weekday6', align: 'center', editor:{type:'text'},fitColumns:true">周六</th>
+                <th data-options="field:'weekday7', align: 'center', editor:{type:'text'},fitColumns:true">周天</th>
+                <th data-options="field:'next_weekday1', align: 'center', editor:{type:'text'},fitColumns:true">下周一</th>
+            </tr>
+            </thead>  
+    </table>
+
+   <script type="text/javascript">
+       // 定义工具栏
+       var toolbar = addToolbar(); 
+   </script>
+</body>
+</html>

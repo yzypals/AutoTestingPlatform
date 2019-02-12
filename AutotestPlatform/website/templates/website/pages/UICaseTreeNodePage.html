@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    {% load staticfiles %}
+    <!--引入JQuery-->
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery-3.2.1.min.js' %}"></script> 
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery.easyui.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'website/js/common.js' %}"></script>         
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/locale/easyui-lang-zh_CN.js' %}"></script> 
+    <script type="text/javascript" src="{% static 'website/js/datagrid-dnd.js' %}"></script>    
+    <link rel="stylesheet" type="text/css" href="{% static  'website/jquery-easyui/themes/default/easyui.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'website/jquery-easyui/themes/icon.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'website/jquery-easyui/demo/demo.css' %}">
+
+    <script>
+        var ifInsert = undefined; // 用于标记行是否是新增还是修改
+        var editIndex = undefined;     // 用于存储正在编辑行的索引
+        var ID = undefined;     // 用于记录ID
+
+        // 用于存储记录行中处于编辑，还未保存的值
+        var order = undefined; // 步序
+        var object_type = undefined;   // 操作类型
+        var object = undefined;  //操作对象
+        var exec_operation = undefined; // 执行操作
+        var input_params = undefined;  // 输入参数
+        var output_params = undefined; //输出参数
+        var assert_type = undefined; //断言类型
+        var assert_pattern = undefined; //断言模式       
+        var run_times = undefined;  //运行次数
+        var try_for_failure = undefined; // 失败重试次数
+        var page_name = undefined; //  页面名称
+        var projectID = -1;  // 记录当前页面(即用例)所属项目ID
+        var caseID = -1; // 记录当前页面ID，即用例ID
+        var object_id = -1; //  操作对象ID
+
+        
+        function onLoadSuccess(data) {
+            // 修改“操作”列的按钮样式
+            $('.insertRowBtn').linkbutton({text:'插入', plain:true, iconCls:'icon-add'});
+            $('.copyRowBtn').linkbutton({text:'复制', plain:true, iconCls:'icon-add'});
+            $('.editRowBtn').linkbutton({text:'修改', plain:true, iconCls:'icon-edit'});
+            $('.deleteRowBtn').linkbutton({text:'删除', plain:true, iconCls:'icon-remove'});
+            $('.moveUpBtn').linkbutton({text:'上移', plain:true, iconCls:'icon-edit'});
+            $('.moveDownBtn').linkbutton({text:'下移', plain:true, iconCls:'icon-edit'}); 
+
+            $('.saveRowBtn').hide();
+            $('.cancelEditRowBtn').hide(); 
+
+            editIndex = undefined;
+            // 设置自动调整行高(主要是解决行号所在单元格和数据行错位问题)
+            $('#UI_test_case_step').datagrid('fixRowHeight');
+            $('#UI_test_case_step').datagrid('enableDnd');
+        }
+
+        // 加载之前修改url值，以保持页面数据和用例的对应关系
+        function onBeforeLoad(param){
+            // 获取当前页面所在父页面(tab页)的ID，即用例ID
+            var currentTab = window.parent.$('#tabs').tabs('getSelected');
+            var tabID = currentTab.panel('options').id;
+            var nodeID = (tabID.split('-'))[1];
+            $('#UI_test_case_step').datagrid('options').url = '/action/loadUICaseSteps?nodeID=' + nodeID;
+        }
+
+        // 编辑时隐藏部分按钮
+        function hideNoneEditBtn(editIndex) {
+            $('#insertRowBtn' + editIndex).hide();
+            $('#copyRowBtn' + editIndex).hide();
+            $('#editRowBtn' + editIndex).hide();
+            $('#deleteRowBtn' + editIndex).hide();
+            $('#moveUpBtn' + editIndex).hide();
+            $('#moveDownBtn' + editIndex).hide();
+            $('.saveRowBtn').linkbutton({text:'保存', plain:true, iconCls:'icon-ok'});
+            $('.cancelEditRowBtn').linkbutton({text:'取消', plain:true, iconCls:'icon-cancel'});
+            $('#saveRowBtn' + editIndex).show();
+            $('#cancelEditRowBtn' + editIndex).show();
+        }
+        
+        // 格式化【操作】列
+        function formatOperationColumn(value,row,index){
+                var btn = "<a id='insertRowBtn" + index + "' class='insertRowBtn' onclick='insertRow("+JSON.stringify(row)  +"," + index+")' href='javascript:void(0)'>插入</a> \
+                    <a id='copyRowBtn" + index + "' class='copyRowBtn' onclick='copyRow("+JSON.stringify(row) +"," + index+")' href='javascript:void(0)'>复制</a> \
+                    <a id='editRowBtn" + index + "' class='editRowBtn' onclick='editRow(" + row.id +"," + index+")' \
+                    href='javascript:void(0)'>修改</a>\
+                    <a id='deleteRowBtn" + index + "' class='deleteRowBtn' onclick='removeRow(\"UI_test_case_step\"," + row.id +"," + index+")' href='javascript:void(0)'>删除</a>\
+                    <a id='moveUpBtn" + index + "' class='moveUpBtn' onclick='moveRow(\"UI_test_case_step\","+index+", this)' href='javascript:void(0)'>上移</a> \
+                    <a id='moveDownBtn" + index + "' class='moveDownBtn' onclick='moveRow(\"UI_test_case_step\","+index+", this)' href='javascript:void(0)'>下移</a> \
+                    <a id='saveRowBtn" + index + "' class='saveRowBtn' onclick='saveRow()' \
+                     href='javascript:void(0)' style='display:none'>保存</a>\
+                    <a id='cancelEditRowBtn" + index + "' class='cancelEditRowBtn' onclick='cancelEditRow(this)' \
+                    href='javascript:void(0)' style='display:none'>取消</a>"; 
+                return btn;
+        }
+
+        // 点击表格“插入|新增”按钮事件函数实现
+        function insertRow(row, rowIndex) { 
+            if (endEditing()) { 
+               if (rowIndex == undefined) { // 点击 新增 按钮
+                    editIndex = 0; 
+                    order = '';
+                } else { // 点击 插入 按钮
+                    editIndex = rowIndex + 1;
+                    order = row.order
+                }     
+                                
+            
+                $('#UI_test_case_step').datagrid('insertRow',{
+                    index: editIndex, 
+                    row: { }
+                });
+
+                hideNoneEditBtn(editIndex);
+            
+                $('#UI_test_case_step').datagrid('unselectAll');
+                var row = $('#UI_test_case_step').datagrid('selectRow', editIndex);
+                $(row).datagrid('beginEdit', editIndex);
+
+                // 设置默认值
+                $(row).datagrid('getEditor', {index: editIndex,field: 'object_type'}).target.combobox('setText','页面元素');               
+                initDataForRowcomponent('页面元素', '新增');
+ 
+                ifInsert = true;
+            }                
+        }
+
+
+        // 点击表格“复制”按钮事件函数实现
+        function copyRow(row, rowIndex) { 
+            if (endEditing()) { 
+                editIndex = rowIndex + 1;
+                // 获取当前页面所在父页面(tab页)的ID，即用例ID
+                var currentTab = window.parent.$('#tabs').tabs('getSelected');
+                var tabID = currentTab.panel('options').id;
+                var nodeID = tabID.split('-')[1];
+
+                var params = {
+                    order:row.order,
+                    status:row.status,
+                    object_type:row.object_type,
+                    object:row.object,
+                    exec_operation:row.exec_operation,
+                    input_params:row.input_params,
+                    output_params:row.output_params,
+                    assert_type:row.assert_type,
+                    assert_pattern:row.assert_pattern,
+                    run_times:row.run_times,
+                    try_for_failure:row.try_for_failure,
+                    page_name:row.page_name,
+                    object_id:row.object_id,
+                    node_id:nodeID
+                };
+
+                $('#UI_test_case_step').datagrid('insertRow',{
+                    index: editIndex, 
+                    row: params
+                });
+                onLoadSuccess();              
+                url = '/action/addUICaseStep';
+                   
+                $.post(url, params, function(data,status){
+                        if (data == 'success') {
+                            $.messager.alert('提示','保存成功', 'info');
+                        } else {
+                            $.messager.alert('错误', '保存失败：' + data, 'error');
+                        }
+                        $('#UI_test_case_step').datagrid('reload');        
+                    }
+                ); 
+            } else {
+                $.messager.alert('错误', '保存失败', 'error');
+                $('#UI_test_case_step').datagrid('reload');
+            }
+
+            editIndex = undefined; 
+            object_id = -1;       
+        }  
+        
+       
+        // 点击 保存 按钮的函数实现
+        function saveRow(){
+            if (editIndex == undefined) {
+                $.messager.alert('提示', '操作失败，没有正在编辑的记录', 'info');
+                return;
+            } 
+            console.log(object_type);
+            console.log(exec_operation);
+            if ($('#UI_test_case_step').datagrid('validateRow', editIndex)){
+                $('#UI_test_case_step').datagrid('endEdit', editIndex);
+                var isValid = true;
+                if ((page_name == '' || page_name == []) && object_type == '页面元素') {
+                    $.messager.alert('提示','保存失败，所在页面不能为空', 'warnging');
+                    isValid = false;
+                } else if (object == '' || object == []) {
+                    $.messager.alert('提示','保存失败，操作对象不能为空', 'warnging');
+                     isValid = false;   
+                } else if (object_type == '页面元素') {
+                    if (exec_operation == '' || exec_operation == []) {
+                        $.messager.alert('提示','保存失败，执行操作不能为空', 'warnging');
+                        isValid = false;              
+                    }
+                } else if (input_params == '' && object_type == '数据库') {
+                    $.messager.alert('提示','保存失败，输入参数不能为空', 'warnging');
+                    isValid = false;                    
+                } else if (run_times != '' && isNaN(run_times)){
+                    $.messager.alert('提示', '保存失败，重复执行次数只能为数字', 'warnging');
+                    isValid = false;      
+                } else if (try_for_failure != '' && isNaN(try_for_failure)){
+                    $.messager.alert('提示', '保存失败，失败重试次数只能为数字', 'warnging');
+                     isValid = false;  
+                } 
+
+                if (!isValid) {
+                    ifInsert = undefined;
+                    editIndex = undefined;
+                    onLoadSuccess();
+                    $('#UI_test_case_step').datagrid('reload');
+                    return;                     
+                }
+ 
+                // 获取当前页面所在父页面(tab页)的ID，即用例ID
+                var currentTab = window.parent.$('#tabs').tabs('getSelected');
+                var tabID = currentTab.panel('options').id;
+                var nodeID = tabID.split('-')[1];
+   
+                if (ifInsert == true) { // 新增
+                    var url = '/action/addUICaseStep';
+                    var params = {   
+                        order:order,
+                        status:'启用',
+                        object_type:object_type,
+                        object:object,
+                        exec_operation:exec_operation,
+                        input_params:input_params,
+                        output_params:output_params,
+                        assert_type:assert_type,
+                        assert_pattern:assert_pattern,
+                        run_times:run_times,
+                        try_for_failure:try_for_failure,
+                        page_name:page_name,
+                        object_id:object_id,
+                        node_id:nodeID
+                    };
+                } else if (ifInsert == false) { // 修改
+                    var url = '/action/updateUICaseStep';
+                    var params = {
+                        id:ID,
+                        order:order,
+                        object_type:object_type,
+                        object:object,
+                        exec_operation:exec_operation,
+                        input_params:input_params,
+                        output_params:output_params,
+                        assert_type:assert_type,
+                        assert_pattern:assert_pattern,
+                        run_times:run_times,
+                        try_for_failure:try_for_failure,
+                        page_name:page_name,
+                        object_id:object_id
+                    };
+                }
+
+                $.post(url, params, function(data,status){
+                        if (data == 'success') {
+                            $.messager.alert('提示','保存成功', 'info');
+                        } else {
+                            $.messager.alert('错误', '保存失败:' + data, 'error');
+                        }
+                        $('#UI_test_case_step').datagrid('reload');        
+                    }
+                ); 
+            } else {
+                $.messager.alert('告警', '保存失败,请检查填写项是否合法', 'error');
+                $('#UI_test_case_step').datagrid('reload');
+            }
+
+            ifInsert = undefined;
+            editIndex = undefined; 
+            onLoadSuccess();
+            object_id = -1;
+        }
+
+        // 点击 取消 按钮的函数实现
+        function cancelEditRow() {
+            if (editIndex == undefined) {
+                $.messager.alert('提示', '操作失败，没有正在编辑的记录', 'info');
+                return;
+            } 
+            $('#UI_test_case_step').datagrid('endEdit', editIndex);             
+            $('#UI_test_case_step').datagrid('reload', editIndex);
+         
+            ifInsert = undefined;
+            editIndex = undefined;
+            object_id = -1;
+            onLoadSuccess();                       
+        }
+ 
+          // 结束编辑
+        function endEditing(){
+            if (editIndex == undefined) {
+                return true;
+            } else {
+                $.messager.alert('提示', '您还有记录未保存', 'warnging');
+                return false;
+            }
+        }
+
+        // 结束编辑时自动触发的事件函数实现
+        function onEndEdit(index, row) {
+            // 获取单元格中输入的内容
+            object_type = $(this).datagrid('getEditor', {index: index,field: 'object_type'}).target.combobox('getText');
+            page_name = $(this).datagrid('getEditor', {index: index,field: 'page_name'}).target.combobox('getText'); 
+            object = $(this).datagrid('getEditor', {index: index,field: 'object'}).target.combobox('getText');
+            exec_operation = $(this).datagrid('getEditor', {index: index,field: 'exec_operation'}).target.combobox('getText');
+            input_params = $(this).datagrid('getEditor', {index: index,field: 'input_params'}).target.val();
+            output_params = $(this).datagrid('getEditor', {index: index,field: 'output_params'}).target.val();            
+            assert_type = $(this).datagrid('getEditor', {index: index,field: 'assert_type'}).target.combobox('getText');
+            assert_pattern = $(this).datagrid('getEditor', {index: index,field: 'assert_pattern'}).target.val();   
+            run_times = $(this).datagrid('getEditor', {index: index,field: 'run_times'}).target.val(); 
+            try_for_failure = $(this).datagrid('getEditor', {index: index,field: 'try_for_failure'}).target.val();
+        }
+
+        // 点击表格 修改 按钮的函数实现
+        function editRow(rowID, index){
+            if (endEditing()) { 
+                if (index == undefined) { // 点击表格上方的 修改 按钮
+                    //获取选中行的数据  
+                    var rowsSelected = $('#UI_test_case_step').datagrid('getSelections');
+                    if (rowsSelected.length < 1) {  //如果没有选中行，提示信息  
+                        $.messager.alert("提示消息", "请选择要修改的记录！", 'info');  
+                        return;  
+                    } else if (rowsSelected.length > 1) {
+                        $.messager.alert("提示信息", "每次只能选择一条记录！", 'info');
+                        return;
+                    }
+                    editIndex = $('#UI_test_case_step').datagrid('getRowIndex', rowsSelected[0]);
+                    ID = rowsSelected[0].id;
+                } else { // 点击记录行所在的 修改 按钮
+                    ID = rowID;
+                    editIndex = index;
+                }
+                hideNoneEditBtn(editIndex);  
+         
+                $('#UI_test_case_step').datagrid('unselectAll');
+                var row = $('#UI_test_case_step').datagrid('selectRow', editIndex);
+                var rowSelected = $('#UI_test_case_step').datagrid('getSelected');
+                $(row).datagrid('beginEdit', editIndex);
+
+                var object_type = rowSelected.object_type; 
+                 
+                initDataForRowcomponent(object_type, '修改');
+
+                ifInsert = false;              
+            }  
+        }
+            
+
+        var rowSelected = undefined; //用于存储从commbox选择的项
+        var textChanged = false;    // 用于判断是否combobox选取、输入的内容是否改变
+    
+
+        // 初始化行记录组件值
+        function initDataForRowcomponent(objectType, flag) {
+            var pageNameEditor = $('#UI_test_case_step').datagrid('getEditor', {index: editIndex, field:'page_name'});
+            var objectEditor = $('#UI_test_case_step').datagrid('getEditor', {index: editIndex, field:'object'});
+            var operationEditor = $('#UI_test_case_step').datagrid('getEditor', {index: editIndex, field:'exec_operation'});
+            var assertTypeEditor = $('#UI_test_case_step').datagrid('getEditor', {index: editIndex, field:'assert_type'});
+            var assertPatternEditor = $('#UI_test_case_step').datagrid('getEditor', {index: editIndex, field:'assert_pattern'});
+            var inputParamsEditor = $('#UI_test_case_step').datagrid('getEditor', {index: editIndex, field:'input_params'});
+            var outParamsEditor = $('#UI_test_case_step').datagrid('getEditor', {index: editIndex, field:'output_params'});
+            var assertTypeEditor = $('#UI_test_case_step').datagrid('getEditor', {index: editIndex,field: 'assert_type'});
+            var assertPatternEditor = $('#UI_test_case_step').datagrid('getEditor', {index: editIndex,field: 'assert_pattern'});   
+            var runTimesEditor = $('#UI_test_case_step').datagrid('getEditor', {index: editIndex,field: 'run_times'}); 
+            var tryForFailureEditor = $('#UI_test_case_step').datagrid('getEditor', {index: editIndex,field: 'try_for_failure'});
+
+
+            var currentTab = window.parent.$('#tabs').tabs('getSelected');
+            var tabID = currentTab.panel('options').id;
+            projectID = tabID.split('-')[0];
+            caseID = tabID.split('-')[1];
+
+            if(flag == '新增' || flag == '切换对象类型') {
+                pageNameEditor.target.combobox('clear'); 
+                // 清空操作对象
+                objectEditor.target.combobox('clear');
+                //注意：clear方法只是清空展示的文本，并不会清空Data,所以，执行如下操作,注意，json串左右没加[],加了的话会有空值
+                objectEditor.target.combobox('loadData', {'id':0, 'choice':''});
+                operationEditor.target.combobox('clear');
+                inputParamsEditor.target.val(''); // 清空输入参数
+                outParamsEditor.target.val('');
+                assertTypeEditor.target.combobox('clear'); 
+                assertPatternEditor.target.val(''); // 清空断言模式
+            }
+
+   
+            if (objectType == '页面元素') {
+                //请求元素页面
+                $.get('/action/getPagesForPageElements?projectID=' + projectID, function(data,status) {
+                    var jsonData = JSON.parse(data);
+                    if (jsonData['result'] == 'success') {
+                        pageNameEditor.target.combobox('loadData', jsonData['choices']);
+ 
+                    } else {
+                        $.messager.alert('错误信息', '获取元素页面出错: ' + jsonData['choices'], 'error');
+                    }
+                });              
+                // getProjectChosen('UICaseTree').then(function(jsonData) { 
+                //     if (jsonData['result'] == 'success') {   
+                //         var projectID = jsonData['data']['id']
+                //         $.get('/action/getPagesForElements?projectID=' + projectID, function(data,status) {
+                //             var jsonData = JSON.parse(data);
+                //             if (jsonData['result'] == 'success') {
+                //                 if(flag == '新增' || flag == '切换对象类型') {
+                //                     pageNameEditor.target.combobox('clear');                             
+                //                 }
+                //                 pageNameEditor.target.combobox('loadData', jsonData['choices']);
+ 
+                //             } else {
+                //                 $.messager.alert('错误信息', '获取元素页面出错: ' + jsonData['choices'], 'error');
+                //             }
+                //         });
+                //     } else {
+                //         $.messager.alert('错误信息', '获取当前选择项目出错: ' + jsonData['data'], 'error');
+                //     }
+                // });
+
+                  
+                // 请求元素可执行操作
+                $.get('/action/getOperationsForObjectType?objectType=页面元素', function(data,status) {
+                    var jsonData = JSON.parse(data);
+                    if (jsonData['result'] == 'success') {
+                        operationEditor.target.combobox('loadData', jsonData['choices']);
+                    } else {
+                        $.messager.alert('错误信息', '获取可执行操作出错：' + jsonData['choices'], 'error');
+                    }
+                });   
+
+
+                // 请求可用断言类型
+                $.get('/action/getAssertionsForObjectType?opType=页面操作', function(data,status) {
+                    var jsonData = JSON.parse(data);
+                    if (jsonData['result'] == 'success') {
+                        assertTypeEditor.target.combobox('loadData', jsonData['choices']);
+                    } else {
+                        $.messager.alert('错误信息', '获取可用断言出错: ' + jsonData['choices'], 'error');
+                    }
+                });
+
+                // 启用页面对象输入框
+                pageNameEditor.target.combobox('enable');
+
+                // 启用执行操作
+                operationEditor.target.combobox('enable');
+
+                // 启用输入参数 
+                inputParamsEditor.target.attr('disabled', false);
+
+                // 启用输出参数
+                outParamsEditor.target.attr('disabled', false);  
+
+                // 启用断言类型
+                assertTypeEditor.target.combobox('enable');
+
+                // 启用断言模式
+                assertPatternEditor.target.attr('disabled', false);  
+            }else if (objectType == '数据库') {
+                 //设置所在页面为 --
+                $(pageNameEditor.target).combobox('clear');
+                $(pageNameEditor.target).combobox('loadData', [{'id':'0','choice':'--'}]);
+                $(pageNameEditor.target).combobox('setText', '--');
+                
+                $.get('/action/getDbsForDBType?projectID=' + projectID + '&projectType=UIProject', function(data,status) {
+                    var jsonData = JSON.parse(data);
+                    if (jsonData['result'] == 'success') {
+                        objectEditor.target.combobox('loadData', jsonData['choices']); 
+                    } else {
+                        $.messager.alert('错误信息', '获取数据库操作对象出错:' + jsonData['choices'], 'error');
+                    }
+                });
+
+                // 请求可执行操作
+                $.get('/action/getOperationsForObjectType?objectType=数据库操作', function(data,status) {
+                    var jsonData = JSON.parse(data);
+                    if (jsonData['result'] == 'success') {
+                        operationEditor.target.combobox('loadData', jsonData['choices']);
+                    } else {
+                        $.messager.alert('错误信息', '获取可执行操作出错：' + jsonData['choices'], 'error');
+                    }
+                }); 
+
+                 // 请求可用断言
+                $.get('/action/getAssertionsForObjectType?opType=数据库操作', function(data,status) {
+                    var jsonData = JSON.parse(data);
+                    if (jsonData['result'] == 'success') {
+                        assertTypeEditor.target.combobox('loadData', jsonData['choices']);
+                    } else {
+                        $.messager.alert('错误信息', '获取可用断言出错: ' + jsonData['choices'], 'error');
+                    }
+                }); 
+
+                // 启用页面对象输入框
+                pageNameEditor.target.combobox('enable');
+
+                // 启用执行操作
+                operationEditor.target.combobox('enable');
+
+                // 启用输入参数 
+                inputParamsEditor.target.attr('disabled', false);
+
+                // 启用输出参数
+                outParamsEditor.target.attr('disabled', false);  
+
+                // 启用断言类型
+                assertTypeEditor.target.combobox('enable');
+
+                // 启用断言模式
+                assertPatternEditor.target.attr('disabled', false);  
+
+            } else if (objectType == '系统函数') {
+                //设置所在页面为 --
+                pageNameEditor.target.combobox('clear');
+                pageNameEditor.target.combobox('loadData', [{'id':'0','choice':'--'}]);
+                pageNameEditor.target.combobox('setText', '--');
+     
+                // 请求操作对象，即可执行函数
+                $.get('/action/getFuntionsForFuncType', function(data,status) {
+                    var jsonData = JSON.parse(data);
+                    if (jsonData['result'] == 'success') {
+                        objectEditor.target.combobox('loadData', jsonData['choices']);
+                    } else {
+                        $.messager.alert('错误信息', '获取可执行函数出错：' + jsonData['choices'], 'error');
+                    }
+                }); 
+
+                // 请求可执行操作
+                operationEditor.target.combobox('clear');
+                operationEditor.target.combobox('loadData',[{"id":"0","choice":"CALL"}]);             
+                operationEditor.target.combobox('setText', 'CALL');
+
+
+                // 请求可用断言类型
+                $.get('/action/getAssertionsForObjectType?opType=系统函数调用|页面操作', function(data,status) {
+                    var jsonData = JSON.parse(data);
+                    if (jsonData['result'] == 'success') {
+                        assertTypeEditor.target.combobox('loadData', jsonData['choices']);
+                    } else {
+                        $.messager.alert('错误信息', '获取可用断言出错: ' + jsonData['choices'], 'error');
+                    }
+                });  
+
+                // 启用页面对象输入框
+                pageNameEditor.target.combobox('enable');
+
+                // 启用执行操作
+                operationEditor.target.combobox('enable');
+
+                // 启用输入参数 
+                inputParamsEditor.target.attr('disabled', false);
+
+                // 启用输出参数
+                outParamsEditor.target.attr('disabled', false);  
+
+                // 启用断言类型
+                assertTypeEditor.target.combobox('enable');
+
+                // 启用断言模式
+                assertPatternEditor.target.attr('disabled', false);     
+
+            } else if (objectType == '用例') {
+                //请求用例所在页面
+                $.get('/action/getPagesForCases?projectID=' + projectID, function(data,status) {
+                    var jsonData = JSON.parse(data);
+                    if (jsonData['result'] == 'success') {
+                        pageNameEditor.target.combobox('loadData', jsonData['choices']);
+ 
+                    } else {
+                        $.messager.alert('错误信息', '获取元素页面出错: ' + jsonData['choices'], 'error');
+                    }
+                }); 
+
+                // // 请求操作对象（测试用例
+                // $.get('/action/getCasesForProject?projectType=UI&projectID=' + projectID +'&caseID=' + caseID, function(data,status) {
+                //     var jsonData = JSON.parse(data);
+                //     if (jsonData['result'] == 'success') {
+                //         objectEditor.target.combobox('loadData', jsonData['choices']); 
+                //     } else {
+                //         $.messager.alert('错误信息', '获取测试用例对象出错:' + jsonData['choices'], 'error');
+                //     }
+                // });
+
+
+                // 禁用执行操作
+                operationEditor.target.combobox('disable');
+
+                // 禁用输入参数 
+                inputParamsEditor.target.attr('disabled', true);
+
+                // 禁用输出参数
+                outParamsEditor.target.attr('disabled', true);  
+
+                // 禁用断言类型
+                assertTypeEditor.target.combobox('disable');
+
+                // 禁用断言模式
+                assertPatternEditor.target.attr('disabled', true); 
+            }
+        }
+
+
+        //选择对象类型下拉列表项时触发事件
+        function onSelectForObjectTypeCombobox(row) {
+            rowSelected = row;
+            initDataForRowcomponent(row.choice, '切换对象类型');
+        }
+
+
+       // 选择 归属页面 下拉列表项时触发的事件
+       function onSelectForPageCombobox(row) {
+            rowSelected = row;
+            object_type = $('#UI_test_case_step').datagrid('getEditor', {index: editIndex,field: 'object_type'}).target.combobox('getText');
+            
+            if (object_type == '页面元素'){
+                var objectEditor = $('#UI_test_case_step').datagrid('getEditor', {index: editIndex, field:'object'});
+                console.log('--')
+                // 请求页面元素
+                $.get('getElementsForPageSelected?pageID=' + row.id, function(data,status) {
+                    var jsonData = JSON.parse(data);
+                    if (jsonData['result'] == 'success') {
+                        $(objectEditor.target).combobox('clear'); // 清空上次加载的数据，避免干扰
+                        $(objectEditor.target).combobox('loadData', jsonData['choices']); // 注意这里要用JSON。parse把字符串的data转为json串
+                    } else {
+                        $.messager.alert('错误信息', '获取页面元素对出错：' + jsonData['choices'], 'error');
+                    }
+                });   
+            }   
+            else if (object_type == '用例'){
+                var objectEditor = $('#UI_test_case_step').datagrid('getEditor', {index: editIndex, field:'object'});
+                // 请求页面元素
+                $.get('getCasesForPageSelected?pageID=' + row.id + '&projectID=' + projectID + '&projectType=UI' + '&caseID=' + caseID, function(data,status) {
+                    var jsonData = JSON.parse(data);
+                    if (jsonData['result'] == 'success') {
+                        $(objectEditor.target).combobox('clear'); // 清空上次加载的数据，避免干扰
+                        $(objectEditor.target).combobox('loadData', jsonData['choices']); // 注意这里要用JSON。parse把字符串的data转为json串
+                    } else {
+                        $.messager.alert('错误信息', '获取页面元素对出错：' + jsonData['choices'], 'error');
+                    }
+                });   
+            }  
+        }
+
+ 
+        // 选择 操作对象 下拉列表项时触发的事件
+        function onSelectForObjectCombobox(row) {
+            rowSelected = row;
+            object_id = row.id;
+            var operationEditor = $('#UI_test_case_step').datagrid('getEditor', {index: editIndex, field:'exec_operation'});
+
+            if (operationEditor.target.combobox('getText').toLowerCase() == 'call'){
+                var editor = $('#UI_test_case_step').datagrid('getEditor', {index: editIndex, field:'input_params'});
+                $(editor.target).val(row.param_style); 
+            } 
+        }
+
+        // 选择 操作 下拉列表项时触发的事件
+        function onSelectForOperationCombobox(row) {
+            rowSelected = row;       
+        }
+
+        // 选择 断言类型 下拉列表项时触发的事件
+        function onSelectForAssertTypeCombobox(row){
+            rowSelected = row;
+            var editor = $('#UI_test_case_step').datagrid('getEditor', {index: editIndex, field:'assert_pattern'});
+            $(editor.target).val(row.assert_pattern);
+        }
+
+        // 收起下单选Combobox下拉列表时触发事件
+        function onHidePanelForSingleSelectCombobox() {
+            var text = $(this).combobox('getText'); // 获取输入框的值
+            if (textChanged) {
+                if (rowSelected == undefined) { // 表明是手动输入的值
+                    //循环遍历下拉列表框的选项，判断输入值是否在选项中，否则清空
+                    var comboboxData = $(this).combobox('getData');
+                    var if_found = false; // 用于判断是否找到标记
+                    for (var j=0; j<comboboxData.length; j++) {
+                        var dataObj = comboboxData[j];
+                        if(dataObj.choice == text) {
+                            if_found = true;
+                            break;
+                        }else{
+                            if_found = false;
+                        }    
+                    }
+                    if(!if_found) { 
+                        $(this).combobox('clear'); // 清空输入框
+                        // $.messager.alert('提示', '请选择现有项', 'warn');
+                    }                   
+                } else { // 通过“点选”下拉列表选择的值
+                    if (text != rowSelected.choice) {
+                        $(this).combobox('clear'); // 清空输入框
+                        // $.messager.alert('提示', '请选择现有项', 'warn');
+                    }
+
+                }
+                textChanged = false;
+
+            }
+            rowSelected = undefined;                  
+        }
+
+        // commbox输入框的值改变时触发事件
+        function onChangeForCombobox(newValue, oldValue) {
+            textChanged = true;       
+        }
+
+
+        // 删除表格中的记录
+        function removeRow(datagridID, rowID, index){ 
+            var idSelector = '#' + datagridID;
+            if (index == undefined) { // 点击表格上方的删除按钮
+                //获取选中行的数据  
+                var rowsSelected = $(idSelector).datagrid('getSelections');
+                if (rowsSelected.length < 1) {  //如果没有选中行，提示信息  
+                    $.messager.alert("提示信息", "请选择要删除的记录！", 'info');  
+                    return;  
+                }
+
+                $.messager.confirm("确认消息", "确定要删除所选记录吗？", function (isDelete) {  
+                    if (isDelete) { //确定删除
+                        var url = '/action/removeCaseStep';
+                        var rowIDs = '';  // 存放所选记录的ID
+                        for (var i = 0; i < rowsSelected.length; i++) {  
+                            rowIDs += rowsSelected[i].id + ",";  
+                        }
+
+                        data = 'rowIDs=' + rowIDs + '&datagridID=' + datagridID;              
+                        $.post(url, data, function(data,status) {
+                            if (data == 'success') {
+                                $.each(rowsSelected, function(i, row){
+                                    var rowIndex = $(idSelector).datagrid('getRowIndex', row);
+                                    $(idSelector).datagrid('deleteRow', rowIndex); 
+                                });           
+                                $.messager.alert('提示信息', '删除成功', 'info');
+                                $(idSelector).datagrid('reload');  // 重新加载数据，防止执行其它操作时获取索引错误
+                            } else {
+                                $.messager.alert('错误信息', '删除失败:' + data, 'error');
+                            } 
+                        });                  
+                    }  
+                });  
+            } else { // 点击记录行所在的 删除 按钮
+                $.messager.confirm("确认消息", "确定要删除所选记录吗？", function (isDelete) {  
+                    if (isDelete) { //确定删除
+                        var url = '/action/removeCaseStep'; 
+                        var data = 'rowIDs=' + rowID + ',&datagridID=' + datagridID;  
+
+                        $.post(url, data, function(data,status) {
+                            if (data == 'success') {
+                                $(idSelector).datagrid('deleteRow', index);
+                                $(idSelector).datagrid('reload');
+                                $.messager.alert('提示信息', '删除成功', 'info');
+                            } else {
+                                $.messager.alert('错误信息', '删除失败:' + data, 'warnging');
+                            } 
+                        });                  
+                    }  
+                });  
+            }
+        } 
+
+        // 正在编辑时，禁止拖拽
+        function onBeforeDrag(row) {
+            if (editIndex != undefined) {
+                // 处于正在编辑状态,取消拖拽
+                return false;
+            }
+        }
+
+    </script>
+</head>
+<body>
+    <!--项目配置名称列表-->
+    <table class="easyui-datagrid" rownumbers="true" pagination="true" id="UI_test_case_step"
+        data-options="border:false,
+        singleSelect:false,
+        fit:true,
+        collapsible: true,
+        toolbar: toolbar, 
+        rownumbers: true,
+        pageSize: 25,    
+        pageList: [25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100],      
+        nowrap: false,
+        url: '',
+        method: 'get',
+        onEndEdit:onEndEdit,
+        onBeforeLoad:onBeforeLoad,
+        onLoadSuccess:onLoadSuccess,
+        onBeforeDrag:onBeforeDrag,
+        onDrop:function(targetRow,sourceRow,point, datagridID){
+            onDropForTestCaseStep(targetRow, sourceRow, point, 'UI_test_case_step');
+        }">
+        <thead>
+            <tr>
+                <th data-options="field:'ck',checkbox:true, fitColumns:true" rowspan="2"></th>
+                <th data-options="field:'id', align: 'center', fitColumns:true" rowspan="2">步骤ID</th>
+                <th data-options="field:'order', align: 'center', fitColumns:true" rowspan="2">步序</th>
+                <th data-options="field:'status', align: 'center'" width="="40px" rowspan="2">状态</th>
+                <th data-options="field:'object_type', align: 'center', fitColumns:true, 
+                    editor:{
+                        type:'combobox',
+                        options:{
+                            valueField:'id',
+                            textField:'choice',
+                            data:[{id:1,choice:'页面元素'},{id:2,choice:'系统函数'},{id:3, choice:'用例'}],
+                            required:true,
+                            editable:false,
+                            panelHeight:'auto',
+                            onSelect: onSelectForObjectTypeCombobox
+                        }
+                    }" rowspan="2" width="90px">对象类型</th>
+                <th data-options="field:'page_name', align:'left', fitColumns:true,
+                editor:{
+                    type:'combobox',
+                    options:{
+                        valueField:'id',
+                        textField:'choice',
+                        required:false,
+                        editable:true,
+                        panelHeight:'auto',
+                        onSelect:onSelectForPageCombobox,
+                        onHidePanel:onHidePanelForSingleSelectCombobox,
+                        onChange:onChangeForCombobox
+                        }
+                    }" width='200px' rowspan="2">所在页面</th> 
+                <th data-options="field:'object', align: 'left',
+                    editor:{
+                        type:'combobox',
+                        options:{
+                            valueField:'id',
+                            textField:'choice',
+                            required:true,
+                            editable:true,
+                            panelHeight:'auto',
+                            onSelect: onSelectForObjectCombobox,
+                            onHidePanel:onHidePanelForSingleSelectCombobox,
+                            onChange:onChangeForCombobox
+                        }
+                    }" rowspan="2" width="250px">操作对象</th>
+                <th data-options="field:'exec_operation', align: 'left',
+                    editor:{
+                        type:'combobox',
+                        options:{
+                            valueField:'id',
+                            textField:'choice',
+                            required:true,
+                            editable:true,
+                            panelHeight:'auto',
+                            onSelect:onSelectForOperationCombobox,
+                            onHidePanel:onHidePanelForSingleSelectCombobox,
+                            onChange:onChangeForCombobox
+                        }
+                    }" rowspan="2" width="100px">执行操作</th>
+                <th data-options="field:'input_params', align: 'left', editor:{type:'text'}" width="300px" rowspan="2">输入参数</th>         
+                <th data-options="field:'output_params', align: 'left', editor:{type:'text'}" width="150px" rowspan="2">输出参数</th> 
+                <th colspan="2">预期结果</th> 
+                <th data-options="field:'run_times', align: 'center', editor:{type:'text'},fitColumns:true" rowspan="2">重复执行次数</th>
+                <th data-options="field:'try_for_failure', align: 'center', editor:{type:'text'},fitColumns:true" rowspan="2">失败重试次数</th>  
+                <th data-options="field:'operation',title:'操作', align: 'center', fitColumns:false,
+                formatter:function(value,row,index){
+                    return formatOperationColumn(value,row,index);}"  
+                width='360px' rowspan="2">操作</th>                
+            </tr>
+            <tr>
+                <th data-options="field:'assert_type', align: 'left', editor:{
+                        type:'combobox',
+                        options:{
+                            valueField:'id',
+                            textField:'choice',
+                            required:false,
+                            editable:true,
+                            panelHeight:'auto',
+                            onSelect:onSelectForAssertTypeCombobox,
+                            onHidePanel:onHidePanelForSingleSelectCombobox,
+                            onChange:onChangeForCombobox
+                        }}" width = "250px">断言类型</th>
+                <th data-options="field:'assert_pattern', align: 'left', editor:{type:'text'}" width="300px">断言模式</th>
+            </tr>
+            </thead>  
+    </table>
+
+    <!--增加工具条-->
+    <script type="text/javascript">
+        // 定义工具栏
+        var toolbar = addToolbar('UI_test_case_step','UI_test_case_step'); 
+    </script>
+  
+    </script>
+</body>
+</html>

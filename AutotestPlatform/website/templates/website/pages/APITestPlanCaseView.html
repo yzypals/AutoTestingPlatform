@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    {% load staticfiles %}
+    <!--引入JQuery-->
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery-3.2.1.min.js' %}"></script> 
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery.easyui.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery.min.js' %}"></script>    
+    <script type="text/javascript" src="{% static 'website/js/common.js' %}"></script>    
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/locale/easyui-lang-zh_CN.js' %}"></script>    
+    <script type="text/javascript" src="{% static 'website/js/datagrid-dnd.js' %}"></script>            
+    <link rel="stylesheet" type="text/css" href="{% static 'website/jquery-easyui/themes/default/easyui.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'website/jquery-easyui/themes/icon.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'website/jquery-easyui/demo/demo.css' %}">
+    <script>
+        function onLoadSuccess(data) {
+            // 修改“操作”列的按钮样式
+            $('.deleteRowBtn').linkbutton({text:'删除', plain:true, iconCls:'icon-remove'});
+            $('.moveUpBtn').linkbutton({text:'上移', plain:true, iconCls:'icon-edit'});
+            $('.moveDownBtn').linkbutton({text:'下移', plain:true, iconCls:'icon-edit'}); 
+            $('.topBtn').linkbutton({text:'置顶', plain:true, iconCls:'icon-edit'}); 
+            $('.bottomBtn').linkbutton({text:'置底', plain:true, iconCls:'icon-edit'}); 
+
+            // 设置自动调整行高(主要是解决行号所在单元格和数据行错位问题)
+            $('#API_case_tree_test_plan').datagrid('fixRowHeight');
+            $('#API_case_tree_test_plan').datagrid('enableDnd');
+        }
+
+        // 加载之前修改url值，以保持页面数据和用例的对应关系
+        function onBeforeLoad(param){
+            // 获取当前页面所在父页面(tab页)的ID
+            var currentTab = window.parent.$('#tabs').tabs('getSelected');
+            var planID = currentTab.panel('options').id;
+            $('#API_case_tree_test_plan').datagrid('options').url = '/action/loadTestPlanCases?planType=APITestPlan&planID=' + planID;
+        }
+
+        // 格式化【操作】列
+        function formatOtherOperationColumn(value,row,index){
+            var btn = "<a id='deleteRowBtn" + index + "' class='deleteRowBtn' onclick='removeRow(\"API_case_tree_test_plan\"," + row.id +"," + index+")' href='javascript:void(0)'>删除</a>\
+                <a id='moveUpBtn" + index + "' class='moveUpBtn' onclick='moveRow(\"API_case_tree_test_plan\"," + index+", this)' href='javascript:void(0)'>上移</a> \
+                <a id='moveDownBtn" + index + "' class='moveDownBtn' onclick='moveRow(\"API_case_tree_test_plan\"," + index+", this)' href='javascript:void(0)'>下移</a> \
+                <a id='topBtn" + index + "' class='topBtn' onclick='putRowTopOrBottom(\"API_case_tree_test_plan\"," + index+", this)' href='javascript:void(0)'>置顶</a> \
+                <a id='bottomBtn" + index + "' class='bottomBtn' onclick='putRowTopOrBottom(\"API_case_tree_test_plan\"," + index+", this)' href='javascript:void(0)'>置底</a>";
+            return btn;
+        }
+
+
+        
+        // // 置顶、置底操作
+        // function putRowTopOrBottom(datagridID, index, button) {
+        //     var idSelector = '#' + datagridID;
+        //     var data = $(idSelector).datagrid('getData');
+        //     // 获取当前页面所在父页面(tab页)的ID
+        //     var currentTab = window.parent.$('#tabs').tabs('getSelected');
+        //     var planID = currentTab.panel('options').id;
+        //     // if ($.trim($(button).text()) == '置顶') { // 需要使用trim，否则不会成功，估计前后有空格
+        //     //     if (index == 0) {
+        //     //         $.messager.alert('提示', '已经是最顶端了', 'info');
+        //     //         $(idSelector).datagrid('reload');  
+        //     //         return;
+        //     //     }
+        //     // } else if ($.trim($(button).text()) == '置底') {
+        //     //     if (data.rows.length == index + 1) {
+        //     //         $.messager.alert('提示', '已经是最底端了', 'info');
+        //     //         $(idSelector).datagrid('reload');  
+        //     //         return;                   
+        //     //     }
+        //     //     direction = 'bottom';
+        //     // }
+        //     var direction = 'top'; 
+        //     if ($.trim($(button).text()) == '置底') {
+        //         direction = 'bottom';
+        //     }
+        //     rowID = data.rows[index].id;
+        //     rowOrder = data.rows[index].order;
+
+        //     $.post('/action/putRowTopOrBottom', {rowID:rowID, rowOrder:rowOrder, direction:direction, datagridID:datagridID, planID:planID}, 
+        //         function(data, status){
+        //             if (data == 'success') {
+        //                 $.messager.alert('提示', '保存成功', 'info');
+        //                 $(idSelector).datagrid('reload');
+        //             } else if (data == 'AlreadyTop') {
+        //                 $.messager.alert('提示', '已经是最顶端了', 'info');
+        //             } else if (data == 'AlreadyBottom'){
+        //                 $.messager.alert('提示', '已经是最底端了', 'info');
+        //             } else {
+        //                 $.messager.alert('错误', '保存失败: ' + data, 'error');
+        //             }
+        //         }
+        //     );
+        // }
+
+
+        // 用例记录行互换
+        function exchangeTestplanCases() {
+            // 获取要互换的行
+            var rowsSelected = $('#API_case_tree_test_plan').datagrid('getSelections');
+            if (rowsSelected.length < 2) {  //如果没有选中行，提示信息  
+                $.messager.alert("告警", "请选择2条需要互换的测试用例！", 'warnging');  
+                return;  
+            } else if (rowsSelected.length > 2) {
+                $.messager.alert("告警", "每次只能选择2条测试用例！", 'warnging');
+                $('#API_case_tree_test_plan').datagrid('uncheckAll');
+                return;
+            }
+
+            var firstRow = rowsSelected[0];
+            var secondRow = rowsSelected[1];
+
+            var temp_order = firstRow.order;
+            firstRow.order = secondRow.order;
+            secondRow.order = temp_order;
+
+            // 注意：直接通过如下方式，互换对象不起作用，所以注释掉
+            // var temp_row = firstRow;
+            // firstRow = secondRow;
+            // secondRow = temp_row;          
+            var firstRowIndex = $('#API_case_tree_test_plan').datagrid('getRowIndex', firstRow);
+            var secondRowIndex = $('#API_case_tree_test_plan').datagrid('getRowIndex', secondRow);
+            var data = $('#API_case_tree_test_plan').datagrid('getData');    
+
+            data.rows[secondRowIndex] = firstRow;
+            data.rows[firstRowIndex] = secondRow; 
+                    
+            // 更新数据库
+            var result = updateRowOrder('{"'+firstRow.id+'":'+firstRow.order +',"'+secondRow.id+'":'+secondRow.order + '}', 'API_case_tree_test_plan');
+            if (result){
+                $('#API_case_tree_test_plan').datagrid('uncheckAll');
+                $('#API_case_tree_test_plan').datagrid('refreshRow', firstRowIndex);
+                $('#API_case_tree_test_plan').datagrid('refreshRow', secondRowIndex);
+            } 
+            onLoadSuccess();
+        }  
+
+        // // 删除表格中的记录
+        // function removeRow(datagridID, rowID, index){ 
+        //     var idSelector = '#' + datagridID;
+        //     if (index == undefined) { // 点击表格上方的删除按钮
+        //         //获取选中行的数据  
+        //         var rowsSelected = $(idSelector).datagrid('getSelections');
+        //         if (rowsSelected.length < 1) {  //如果没有选中行，提示信息  
+        //             $.messager.alert("提示信息", "请选择要删除的记录！", 'info');  
+        //             return;  
+        //         }
+
+        //         $.messager.confirm("确认消息", "确定要删除所选记录吗？", function (isDelete) {  
+        //             if (isDelete) { //确定删除
+        //                 var url = '/action/removeTestPlanCase';
+        //                 var rowIDs = '';  // 存放所选记录的ID
+        //                 for (var i = 0; i < rowsSelected.length; i++) {  
+        //                     rowIDs += rowsSelected[i].id + ",";  
+        //                 }
+
+        //                 data = 'rowIDs=' + rowIDs + '&datagridID=' + datagridID;              
+        //                 $.post(url, data, function(data,status) {
+        //                     if (data == 'success') {
+        //                         $.each(rowsSelected, function(i, row){
+        //                             var rowIndex = $(idSelector).datagrid('getRowIndex', row);
+        //                             $(idSelector).datagrid('deleteRow', rowIndex); 
+        //                         });           
+        //                         $.messager.alert('提示信息', '删除成功', 'info');
+        //                         $(idSelector).datagrid('reload');  // 重新加载数据，防止执行其它操作时获取索引错误
+        //                     } else {
+        //                         $.messager.alert('错误信息', '删除失败:' + data, 'error');
+        //                     } 
+        //                 });                  
+        //             }  
+        //         });  
+        //     } else { // 点击记录行所在的 删除 按钮
+        //         $.messager.confirm("确认消息", "确定要删除所选记录吗？", function (isDelete) {  
+        //             if (isDelete) { //确定删除
+        //                 var url = '/action/removeTestPlanCase'; 
+        //                 var data = 'rowIDs=' + rowID + ',&datagridID=' + datagridID;  
+
+        //                 $.post(url, data, function(data,status) {
+        //                     if (data == 'success') {
+        //                         $(idSelector).datagrid('deleteRow', index);
+        //                         $(idSelector).datagrid('reload');
+        //                         $.messager.alert('提示信息', '删除成功', 'info');
+        //                     } else {
+        //                         $.messager.alert('错误信息', '删除失败:' + data, 'warnging');
+        //                     } 
+        //                 });                  
+        //             }  
+        //         });  
+        //     }
+        // } 
+          
+    </script>
+</head>
+<body>
+    <table class="easyui-datagrid" rownumbers="true" pagination="true" id="API_case_tree_test_plan"  
+        data-options="border:false,
+        singleSelect:false,
+        fit:true,
+        fitColumns:false,
+        collapsible: true,
+        toolbar: toolbar, 
+        rownumbers: true,
+        pageSize: 25,//每页显示的记录条数，默认为10    
+        pageList: [25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100],//可以设置每页记录条数的列表          
+        url: '',
+        method: 'get',  
+        onBeforeLoad:onBeforeLoad,
+        onLoadSuccess:onLoadSuccess,
+        onDrop:function(targetRow,sourceRow,point, datagridID){
+            onDropForTestPlanCaseView(targetRow,sourceRow,point, 'API_case_tree_test_plan');
+        }"> 
+         <thead>
+            <tr>
+                <th data-options="field:'ck',checkbox:true"></th>
+                <th data-options="field:'id', align: 'center', fitColumns:true">ID</th>
+                <th data-options="field:'plan_id', align: 'center', hidden:true">计划ID</th>
+                <th data-options="field:'plan_type', align: 'center', hidden:true">计划类型</th>
+                <th data-options="field:'node_id', align: 'center', fitColumns:true">用例ID</th> 
+                <th data-options="field:'node_path', align: 'left'" width="350px">用例树路径</th>         
+                <th data-options="field:'node_name', align: 'left'" width="250px">用例名称</th>
+             <!--    <th data-options="field:'sub_node_num', align: 'center', fitColumns:true, hidden:true">子节点数量</th>    -->          
+                <th data-options="field:'order', align: 'center', fitColumns:true">顺序</th>    
+                <th data-options="field:'operations', title:'操作', align: 'center',
+                    formatter:function(value,row,index){return formatOtherOperationColumn(value,row,index);}"  
+                    width="300px">操作</th>   
+            </tr>
+        </thead> 
+        </thead> 
+    </table>
+
+    <!--增加工具条-->
+   <script type="text/javascript">
+       var toolbar = addToolbar('API_case_tree_test_plan', 'test_plan_case_view'); 
+   </script>   
+</body>
+</html>

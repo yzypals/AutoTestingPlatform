@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    {% load staticfiles %}
+    <!--引入JQuery-->
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery-3.2.1.min.js' %}"></script> 
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery.easyui.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'website/js/common.js' %}"></script>
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/locale/easyui-lang-zh_CN.js' %}"></script>              
+    <link rel="stylesheet" type="text/css" href="{% static  'website/jquery-easyui/themes/default/easyui.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'website/jquery-easyui/themes/icon.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'website/jquery-easyui/demo/demo.css' %}">
+    <script>
+        var projectID = undefined;  //全局变量，存储获取的项目ID ，用于展示节点树
+        $(document).ready(function() {
+            // 初始化项目combobox下拉列表
+            getProjects('APIProject').then(function(jsonData) { 
+                if (jsonData['result'] == 'success') {
+                    $('#projects').combobox('loadData', jsonData['data']);
+                } else {
+                    $.messager.alert('错误信息', '获取项目失败：' + jsonData['data'], 'error');                 
+                }
+            });
+            var id_of_settimeout = undefined; // 用于存储setTimeout() 返回的 ID 值。该值标识要取消的延迟执行代码块。
+             
+            getProjectChosen('APICaseTree').then(function(jsonData) { 
+                if (jsonData['result'] == 'success') {
+                    // 初始化项目combobox的值，并获取项目ID
+                    $('#projects').combobox('setValue', jsonData['data']['projectName']);
+                    projectID = jsonData['data']['id']
+
+                    // 请求用例树
+                    $('#tree').tree({
+                        dnd:true,
+                        url:'nodeTree?treeType=APICaseTree&projectID=' + projectID,
+                        onClick: function(node){
+                            var rootNodeId =  $(this).tree('getRoot').id; //方法 getRoot    获取根节点，返回节点对象
+                            if (node.id != rootNodeId) {  // 非根节点
+                                
+                                // 取消上次延时未执行的方法
+                                clearTimeout(id_of_settimeout);
+                                
+                                //执行延时
+                                id_of_settimeout = setTimeout(function(){
+                                    // 方法：isLeaf   target  判断指定的节点是否为叶节点，target 参数表示节点的 DOM 对象。
+                                    // 如果为叶节点，即无子节点，则为该节点添加对应的tab页，tab标题命名为节点名称，tabID则设置为 项目ID-节点ID
+                                    if ($(this).tree('isLeaf', node.target)) { 
+                                        var tabID = projectID + '-' + node.id;
+                                        addTab(node.text, tabID);                     
+                                    }
+                                }, 300);                                                      
+                            }
+                        },
+                        onDblClick: function(node){
+                            // 取消上次延时未执行的方法
+                            clearTimeout(id_of_settimeout);
+                            nodetext = node.text; // 保存更改之前的节点名称
+                            $(this).tree('beginEdit', node.target);
+                            
+                        },
+                        onAfterEdit: function(node){
+                            var tempIndex = node.text.substring(node.text.indexOf('-')+1,node.text.length-1).indexOf('-');
+                            if (node.text != '' && tempIndex == -1) {
+                                var newNodeText = node.text;
+                                // if ($(this).tree('isLeaf', node.target)) {
+                                    if (node.text.split('-').length == 1){
+                                        newNodeText = 'ID' + node.id + '-' + node.text;
+                                    } else {
+                                        newNodeText = 'ID' + node.id + '-' + node.text.split('-')[1];
+                                    }
+                                // }
+                                $(this).tree('update', {target: node.target, text:newNodeText});
+
+                                $.post('/action/updateTreeNodeName',
+                                    {
+                                        nodeID:node.id, 
+                                        nodeText:node.text,
+                                        treeType:'APICaseTree'
+                                    },
+                                    function(data,status){
+                                       if (data == 'success') {
+                                            $.messager.alert('提示','保存成功', 'info');
+                                        } else {
+                                            $.messager.alert('提示', '保存失败: ' + data, 'info');
+                                        }        
+                                    }
+                                ); 
+                            } else if(node.text == '') {
+                                $.messager.alert('提示','保存失败，节点名称不能为空', 'info');
+                                // 还原节点名称
+                                $(this).tree('update', {target: node.target, text: nodetext});
+                            } else if(tempIndex != -1) {
+                                $.messager.alert('提示','保存失败，节点名称不能包含字符“-”', 'info');
+                                // 还原节点名称
+                                $(this).tree('update', {target: node.target,text: nodetext});
+                            }
+                        },
+                        onDrop: function(target,source,point){  //节点拖拽
+                            var targetNode = $(this).tree('getNode',target);
+ 
+                            var target = '{"id":' + targetNode.id + ', "projectID":' + targetNode.project_id + ', "parentID":' + targetNode.parent_id + ',"order":'+ targetNode.order +'}';
+                            var source = '{"id":' + source.id + ', "projectID":' + source.project_id + ', "parentID":' + source.parent_id + ',"order":'+ targetNode.order + '}';  
+                            var treeType = "APICaseTree";
+
+                            if (targetNode.parent_id == 0 && point=="top") {  // 拖动到根节点之上
+                                $.messager.alert('提示', '只能有一个根节点节点', 'info');
+                                $('#tree').tree({url:'nodeTree?treeType=APICaseTree&projectID=' + targetNode.project_id});
+                                return;
+                            }
+
+                            $.ajax({
+                                type: "POST",
+                                url:"/action/dragTreeNode",
+                                data:{"info":'{"target":' + target + ',"source":' + source + ',"point":' + '"' +point+ '", "treeType":"' + treeType + '"}'},
+                                sync: false,
+                                success: function(data){
+                                    if (data == 'success') {
+                                        $.messager.alert('提示', '保存成功', 'info');
+                                    } else {
+                                        $.messager.alert('提示', '保存失败:' + data, 'error');                                        
+                                    }                
+                                    $('#tree').tree({url:'nodeTree?treeType=APICaseTree&projectID=' + targetNode.project_id});
+                                },
+                                error: function(data){
+                                    $.messager.alert('提示', '保存失败，错误码：' + data.status, 'error');
+                                    $('#tree').tree({url:'nodeTree?treeType=APICaseTree&projectID=' + targetNode.project_id});
+                                }
+                            });
+                        },
+                        onContextMenu:function(e, node){
+                            treeNodeSelected = node; //定义全局变量,存储目标节点
+                            e.preventDefault(); // 通知 Web 浏览器不要执行与事件关联的默认动作
+                            $(this).tree('select', node.target);
+                            $('#treeNodeMenu').menu('show', {
+                                left: e.pageX,
+                                top: e.pageY
+                            });
+                        }
+                    });
+                } else {
+                    $.messager.alert('错误信息', '获取项目失败：' + jsonData['data'], 'error');
+                }              
+            });         
+        });   
+
+
+        // 增加|删除|复制节点，刷新节点树
+        function treeNodeMenuHandler(item) {
+            if (item.text == '添加') { //添加子节点         
+               $.post('/action/appendTreeNode', {
+                    nodeParentID:treeNodeSelected.id,
+                    nodeText:'nodename',
+                    state:'open',
+                    iconCls:'',
+                    attributes:'',
+                    treeType: 'APICaseTree',
+                    projectID: projectID
+                },
+                function(data,status){
+                    if (data == 'success') {
+                        $.messager.alert('提示','添加成功', 'info');                
+                        $('#tree').tree({url:'nodeTree?treeType=APICaseTree&projectID=' + projectID});
+                    } else {
+                        $.messager.alert('提示', '添加失败：' + data, 'info');
+                    }        
+                });
+
+            } else if (item.text == '删除') {
+                var rootNodeId =  $('#tree').tree('getRoot', treeNodeSelected.target).id
+                if (treeNodeSelected.id == rootNodeId) { //根目录不允许删除
+                    $.messager.alert('告警','根目录不允许删除', 'warning');   
+                    return;
+                }
+
+                $.messager.confirm('确认', '确定删除'+treeNodeSelected.text+'吗？',function(r){
+                    if(r){
+                        $.post('/action/removeTreeNode', {
+                                nodeID:treeNodeSelected.id,
+                                parentID:treeNodeSelected.parent_id,
+                                projectID: treeNodeSelected.project_id,
+                                order:treeNodeSelected.order,
+                                treeType:'APICaseTree'
+                            },
+                            function(data, status) {
+                                if (data == 'success') {
+                                    $.messager.alert('提示', '删除成功', 'info');
+                                    $('#tree').tree('remove', treeNodeSelected.target);
+
+                                } else {
+                                    $.messager.alert('提示', '删除失败：' + data, 'info');
+                                }
+                            }
+                        );                    
+                    }
+                }); 
+            } else if (item.text == '复制') { 
+                var rootNodeId =  $('#tree').tree('getRoot', treeNodeSelected.target).id;
+                if (treeNodeSelected.id == rootNodeId) {  // 非根节点
+                   $.messager.alert('告警','根目录不允许复制', 'warn');  
+                   return;
+                }
+                if ($('#tree').tree('isLeaf', treeNodeSelected.target)) { //如果为叶节点，即无子节点，才可以复制
+                    var father_node = $('#tree').tree('getParent', treeNodeSelected.target); // 获取父节点
+                    var nodeText = treeNodeSelected.text.substring(treeNodeSelected.text.indexOf('-')+1, treeNodeSelected.text.length);
+                    $.post('/action/copyTreeLeafNode', {
+                        nodeParentID:treeNodeSelected.parent_id,
+                        sourceNodeID:treeNodeSelected.id,
+                        nodeText:nodeText,
+                        state:treeNodeSelected.state,
+                        iconCls:treeNodeSelected.state,
+                        attributes:treeNodeSelected.attributes,
+                        treeType: 'APICaseTree',
+                        projectID: treeNodeSelected.project_id
+                    },
+                    function(data,status){
+                        if (data == 'success') {
+                            $.messager.alert('提示','复制成功', 'info');                  
+                            $('#tree').tree({url:'nodeTree?treeType=APICaseTree&projectID=' + projectID});
+                        } else {
+                            $.messager.alert('错误', '添加失败：' + data, 'error');
+                        }        
+                    });
+                } else {
+                    $.messager.alert('告警', '只能复制用例(非目录)', 'warn');
+                    return;
+                }
+            } else if (item.text == '刷新') { 
+                try {              
+                    $('#tree').tree({url:'nodeTree?treeType=APICaseTree&projectID=' + projectID});
+                    $.messager.alert('提示', '刷新成功', 'info');
+                } catch (e) {
+                    $.messager.alert('提示', '刷新失败', 'info');
+                }     
+            }
+        }
+
+
+
+
+        // 点击用例树，叶节点，打开对应tab页的函数实现
+        function addTab(title, tabID){
+            var url = '/action/APICaseTreeNodePage'; 
+            if($('#tabs').tabs('exists', title)){  // 如果tab已存在，则选中、激活tab
+                $('#tabs').tabs('select', title); 
+            } else{ //否则，添加tab
+                var iframe='<iframe scrolling="auto" frameborder="0"  src="'+url+'" style="width:100%;height:100%;"></iframe>';
+                $('#tabs').tabs('add',{
+                    id: tabID,
+                    title: title,
+                    content: iframe,
+                    closable: true
+                });
+            }    
+        }
+
+        // 树形结构上方，项目commbobox onSelect事件处理
+        function onSelectComboboxRow(row) {
+            projectID = row.id; // 注意：这里必须使用全局变量
+            var projectName = row.choice;
+            // 请求树
+            $('#tree').tree({url:'nodeTree?treeType=APICaseTree&projectID=' + projectID});
+
+            // 存储选择的项目ID
+            storeProjectChosen('APICaseTree', projectID, projectName);
+            
+            // 关闭所有标签页
+            var allTabs = $('#tabs').tabs('tabs');
+            for(var i=0; i<allTabs.length; i++) {
+                var title = allTabs[i].panel('options').title;
+                $('#tabs').tabs('close', title); 
+                i--;
+            }
+        } 
+
+    </script>
+
+</head>
+<body class="easyui-layout">
+    <div data-options="region:'west',split: true" title="用例管理" style="width: 300px;">
+        <!-- 
+        position:absolute; left:0px; top:28px; 固定该div不随列表滚动而滚动；
+        background-color:white; 设置div背景为白色，避免往上滚动列表时,列表数据被当成了背景色展示，呈现“透明”状
+        影响视觉效果
+        -->
+        <div style="position:absolute; left:0px; top:28px; width:94%; border:solid 1px #D2E0F2; display:block; background-color:white;"> 
+            <input id="projects" class="easyui-combobox" name="projects" style="width:100%;" 
+            data-options="
+                valueField: 'id',
+                textField: 'choice',
+                label: '下拉选择项目',
+                panelHeight:'auto',
+                labelPosition: 'top',
+                onSelect: onSelectComboboxRow,
+                ">
+        </div>
+
+        <!--
+            style="margin-top: 48px设置外上边距大小写，避免该div和上面commbobox所在div重叠导致数据重叠
+        -->
+        <div style="margin-top: 50px">
+            <ul id="tree" data-options="animate:true,lines:true"></ul> 
+        </div>
+    </div>
+    <div data-options="region:'center',title:'用例详情'">
+        <div class="easyui-tabs"  id="tabs" data-options="fit:true, border:false, plain:true">
+        </div>
+    </div>
+
+    <!--定义右键节点时的弹出菜单-->
+    <div id="treeNodeMenu" class="easyui-menu" data-options="onClick:treeNodeMenuHandler">
+        <div data-options="iconCls:'icon-add'">添加</div>
+        <div data-options="iconCls:'icon-remove'">删除</div>
+        <div data-options="iconCls:'icon-copy'">复制</div>
+        <div data-options="iconCls:'icon-copy'">刷新</div>
+    </div>  
+</body>
+</html>
