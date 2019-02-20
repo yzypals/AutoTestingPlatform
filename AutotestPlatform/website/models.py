@@ -52,7 +52,7 @@ class API_project_setting(models.Model):
     id = models.AutoField(primary_key=True)            # ID, 主键
     project_name = models.CharField(max_length=50)      # 项目名称
     protocol = models.CharField(max_length=10)          # 协议 http、http
-    host = models.CharField(max_length=30)              # 主机地址
+    host = models.CharField(max_length=100)              # 主机地址
     port = models.IntegerField()                        # 端口
     environment = models.CharField(max_length=20)       # 所属环境
     valid_flag = models.CharField(max_length=5)         # 是否启用标识（启用|禁用）
