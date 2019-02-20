@@ -64,35 +64,35 @@ class APIUnittestTestCase(MyUnittestTestCase):
         #     msg = 'fail#%s' % response[1]
         #     self.assertEqual(1, 0, msg=msg)
 
+        body = response[0]
+        if response[0]:
+            encoding = chardet.detect(response[0])['encoding']
 
-        encoding = chardet.detect(response[0])['encoding']
+            logger.info('检测到的编码为：%s, 正在对服务器返回body进行解码' % encoding)
+            if encoding:
+                if  encoding.lower() in ('gb2312', 'windows-1252',  'iso-8859-1'):
+                    body = response[0].decode('gbk')  # decode函数对获取的字节数据进行解码
+                elif encoding.lower() in ('utf-8', 'utf-8-sig', 'iso-8859-2'):
+                    body = response[0].decode('utf-8')
+                elif encoding.lower() == 'ascii':
+                    body = response[0].decode('unicode_escape')
+                else:
+                    logger.info('解码失败，未知编码:%s，不对body做任何解码' % encoding)
+                    body = response[0]
 
-        logger.info('检测到的编码为：%s, 正在对服务器返回body进行解码' % encoding)
-        if encoding:
-            if  encoding.lower() in ('gb2312', 'windows-1252',  'iso-8859-1'):
-                body = response[0].decode('gbk')  # decode函数对获取的字节数据进行解码
-            elif encoding.lower() in ('utf-8', 'utf-8-sig', 'iso-8859-2'):
-                body = response[0].decode('utf-8')
-            elif encoding.lower() == 'ascii':
-                body = response[0].decode('unicode_escape')
-            else:
-                logger.info('解码失败，未知编码:%s，不对body做任何解码' % encoding)
-                body = response[0]
+                if python_version < '3.5':
+                    parser = HTMLParser()
+                    body = parser.unescape(body) # 处理html实体
+                else:
+                    body = unescape(body)
 
-            if python_version < '3.5':
-                parser = HTMLParser()
-                body = parser.unescape(body) # 处理html实体
-            else:
-                body = unescape(body)
+            header = response[1]
+            code = response[2]
+            logger.info('服务器返回结果"响应体(body)": %s' % body)
+            logger.info('服务器返回结果"请求头(headers)": %s' % header)
+            logger.info('服务器返回结果"状态码(code)": %s' % code)
         else:
-            body = response[0]
-
-        header = response[1]
-        code = response[2]
-
-        logger.info('服务器返回结果"响应体(body)": %s' % body)
-        logger.info('服务器返回结果"请求头(headers)": %s' % header)
-        logger.info('服务器返回结果"状态码(code)": %s' % code)
+            body, header,code = response[1], response[1], response[1]
 
         if self.response_to_check == 'body':
             logger.info('正在提取目标返回结果值')
@@ -115,7 +115,7 @@ class APIUnittestTestCase(MyUnittestTestCase):
             self.assert_result(code)
 
 
-    def test_api_for_json(self): # 针对请求体为json格式的：b'id=1318&password=e10adc3949ba59abbe56e057f20f883e'
+    def test_api_for_json(self): # 针对请求体为json格式（类型：字符串）的
         method = self.request_method.lower()
         if method == 'post':
             logger.info('正在发起POST请求...')
@@ -127,36 +127,33 @@ class APIUnittestTestCase(MyUnittestTestCase):
             self.input_params = urllib.parse.urlencode(self.input_params)
             response = self.http.get(self.url_or_sql, self.input_params)
 
-        # if not response[0]:
-        #     self.assertEqual(1, 0, msg='fail#%s' % response[1])
+        body = response[0]
+        if response[0]:
+            encoding = chardet.detect(response[0])['encoding']
+            logger.info('正在对服务器返回body进行解码')
+            if encoding:
+                if  encoding.lower() in ('gb2312', 'windows-1252',  'iso-8859-1'):
+                    body = response[0].decode('gbk')  # decode函数对获取的字节数据进行解码
+                elif encoding.lower() in ('utf-8', 'utf-8-sig', 'iso-8859-2'):
+                    body = response[0].decode('utf-8')
+                elif encoding.lower() == 'ascii':
+                    body = response[0].decode('unicode_escape')
+                else:
+                    logger.info('解码失败，未知编码:%s，不对body做任何解码' % encoding)
+                    body = response[0]
 
-        encoding = chardet.detect(response[0])['encoding']
-        logger.info('正在对服务器返回body进行解码')
-        if encoding:
-            if  encoding.lower() in ('gb2312', 'windows-1252',  'iso-8859-1'):
-                body = response[0].decode('gbk')  # decode函数对获取的字节数据进行解码
-            elif encoding.lower() in ('utf-8', 'utf-8-sig', 'iso-8859-2'):
-                body = response[0].decode('utf-8')
-            elif encoding.lower() == 'ascii':
-                body = response[0].decode('unicode_escape')
-            else:
-                logger.info('解码失败，未知编码:%s，不对body做任何解码' % encoding)
-                body = response[0]
-
-            if python_version < '3.5':
-                parser = HTMLParser()
-                body = parser.unescape(body) # 处理html实体
-            else:
-                body = unescape(body)
+                if python_version < '3.5':
+                    parser = HTMLParser()
+                    body = parser.unescape(body) # 处理html实体
+                else:
+                    body = unescape(body)
+            header = response[1]
+            code = response[2]
+            logger.info('服务器返回结果"响应体(body)": %s' % body)
+            logger.info('服务器返回结果"请求头(headers)": %s' % header)
+            logger.info('服务器返回结果"状态码(code)": %s' % code)
         else:
-            body = response[0]
-
-        header = response[1]
-        code = response[2]
-
-        logger.info('服务器返回结果"响应体(body)": %s' % body)
-        logger.info('服务器返回结果"请求头(headers)": %s' % header)
-        logger.info('服务器返回结果"状态码(code)": %s' % code)
+            body, header,code = response[1], response[1], response[1]
 
         if self.response_to_check == 'body':
             logger.info('正在提取目标返回结果值')
@@ -190,38 +187,33 @@ class APIUnittestTestCase(MyUnittestTestCase):
             self.input_params = urllib.parse.urlencode(self.input_params)
             response = self.http.get(self.url_or_sql, self.input_params)
 
-        # if not response[0]:
-        #     msg = 'fail#%s' % response[1]
-        #     self.assertEqual(1, 0, msg=msg)
+        body = response[0]
+        if response[0]:
+            encoding = chardet.detect(response[0])['encoding']
+            logger.info('正在对服务器返回body进行解码')
+            if encoding:
+                if  encoding.lower() in ('gb2312', 'windows-1252', 'iso-8859-1'):
+                    body = response[0].decode('gbk')  # decode函数对获取的字节数据进行解码
+                elif encoding.lower() in ('utf-8', 'utf-8-sig', 'iso-8859-2'):
+                    body = response[0].decode('utf-8')
+                elif encoding.lower() == 'ascii':
+                    body = response[0].decode('unicode_escape')
+                else:
+                    logger.info('解码失败，未知编码:%s，不对body做任何解码' % encoding)
+                    body = response[0]
 
-        encoding = chardet.detect(response[0])['encoding']
-        logger.info('正在对服务器返回body进行解码')
-        if encoding:
-            if  encoding.lower() in ('gb2312', 'windows-1252', 'iso-8859-1'):
-                body = response[0].decode('gbk')  # decode函数对获取的字节数据进行解码
-            elif encoding.lower() in ('utf-8', 'utf-8-sig', 'iso-8859-2'):
-                body = response[0].decode('utf-8')
-            elif encoding.lower() == 'ascii':
-                body = response[0].decode('unicode_escape')
-            else:
-                logger.info('解码失败，未知编码:%s，不对body做任何解码' % encoding)
-                body = response[0]
-
-            if python_version < '3.5':
-                parser = HTMLParser()
-                body = parser.unescape(body) # 处理html实体
-            else:
-                body = unescape(body)
+                if python_version < '3.5':
+                    parser = HTMLParser()
+                    body = parser.unescape(body) # 处理html实体
+                else:
+                    body = unescape(body)
+                header = response[1]
+                code = response[2]
+                logger.info('服务器返回结果"响应体(body)": %s' % body)
+                logger.info('服务器返回结果"请求头(headers)": %s' % header)
+                logger.info('服务器返回结果"状态码(code)": %s' % code)
         else:
-            body = response[0]
-
-        header = response[1]
-        code = response[2]
-
-        logger.info('服务器返回结果"响应体(body)": %s' % body)
-        logger.info('服务器返回结果"请求头(headers)": %s' % header)
-        logger.info('服务器返回结果"状态码(code)": %s' % code)
-
+            body, header,code = response[1], response[1], response[1]
 
         if self.response_to_check == 'body':
             logger.info('正在提取目标返回结果值')

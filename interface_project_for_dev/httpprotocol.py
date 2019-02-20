@@ -93,7 +93,7 @@ class MyHttp:
                 exec_count = exec_count + 1
                 reason = '%s' % e
                 response = [None, reason]
-                print('发送请求失败，原因：%s,正在进行第%s次尝试' % (e, exec_count))
+                logger.error('发送请求失败，原因：%s,正在进行第%s次尝试' % (e, exec_count))
         return  response
 
     # 封装HTTP POST请求方法
@@ -102,7 +102,7 @@ class MyHttp:
         url = self.protocol + '://' + self.host + ':' + str(self.port)  + url
 
         logger.info('发起的请求为：POST %s' % url)
-        logger.info('参数为：%s' % data)
+        logger.info('请求参数为：%s' % data)
         logger.info('请求头为：%s' % str(self.headers))
         request = urllib.request.Request(url, headers=self.headers, method='POST')
         exec_count = 0
@@ -118,15 +118,15 @@ class MyHttp:
                 exec_count = exec_count + 1
                 reason = '%s' % e
                 response = [None, reason]
-                print('发送请求失败，原因：%s,正在进行第%s次尝试' % (e, exec_count))
+                logger.error('发送请求失败，原因：%s,正在进行第%s次尝试' % (e, exec_count))
         return  response
 
     # 封装HTTP DELETE请求方法
     def delete(self, url, data=b''):
         url = self.protocol + '://' + self.host + ':' + str(self.port)  + url
 
-        print('发起的请求为：DELETE %s' % url)
-        print('参数为：%s' % data)
+        logger.info('发起的请求为：DELETE %s' % url)
+        logger.info('请求参数为：%s' % data)
         logger.info('请求头为：%s' % str(self.headers))
         request = urllib.request.Request(url, headers=self.headers, method='DELETE')
         exec_count = 0
@@ -142,7 +142,7 @@ class MyHttp:
                 exec_count = exec_count + 1
                 reason = '%s' % e
                 response = [None, reason]
-                print('发送请求失败，原因：%s,正在进行第%s次尝试' % (e, exec_count))
+                logger.error('发送请求失败，原因：%s,正在进行第%s次尝试' % (e, exec_count))
         return  response
 
     # 封装HTTP xxx请求方法
