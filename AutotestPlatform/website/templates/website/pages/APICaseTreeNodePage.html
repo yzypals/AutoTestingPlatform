@@ -470,7 +470,7 @@
 
         // 初始化行记录组件值
         function initDataForRowcomponent(stepType, flag) {
-            var stepTypeEditor = $('#API_test_case_step').datagrid('getEditor', {index: editIndex, field:'step_type'});
+            // var stepTypeEditor = $('#API_test_case_step').datagrid('getEditor', {index: editIndex, field:'step_type'});
             var opObjectEditor = $('#API_test_case_step').datagrid('getEditor', {index: editIndex, field:'op_object'});
             var operationEditor = $('#API_test_case_step').datagrid('getEditor', {index: editIndex, field:'exec_operation'});
             var requestHeaderEditor = $('#API_test_case_step').datagrid('getEditor', {index: editIndex, field:'request_header'});   
@@ -744,6 +744,14 @@
         function onSelectForOpObjectCombobox(row) {
             rowSelected = row;
             object_id = row.id;
+
+            // 如果执行操作为 call,即说明步骤类型为执行函数，自动在 输入参数 输入框中填写参数样例
+             var operationEditor = $('#API_test_case_step').datagrid('getEditor', {index: editIndex, field:'exec_operation'});
+
+            if (operationEditor.target.combobox('getText').toLowerCase() == 'call'){
+                var editor = $('#API_test_case_step').datagrid('getEditor', {index: editIndex, field:'input_params'});
+                $(editor.target).val(row.param_style);
+            }
         }
 
         // 选择 校验规则 下拉列表项时触发的事件
