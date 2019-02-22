@@ -8,6 +8,7 @@ import json
 import logging
 from django.core.paginator import  Paginator, PageNotAnInteger, EmptyPage
 from django.db.models import Max
+from django.db.models import Q
 from django.db import transaction
 
 from website.models import Function_setting
@@ -58,14 +59,14 @@ def get_function_settings(request):
 def add_function_setting(request):
     try:
         params = request.POST
-
+        project_type = params['project_type']
         function_name = params['function_name']
         param_style = params['param_style']
         order = params['order']
 
         if not function_name:
             return HttpResponse('函数名称不能为空')
-        elif Function_setting.objects.filter(function_name=function_name).exists():
+        elif Function_setting.objects.filter(function_name=function_name).filter(project_type=project_type).exists():
             logger.error('error, 函数名称(%s)已存在' % function_name)
             return HttpResponse('函数名称(%s)已存在' % function_name)
         # if not param_style:
@@ -78,7 +79,7 @@ def add_function_setting(request):
                 order = max_order + 1
             else:
                 order = 1
-            obj = Function_setting(function_name=function_name, param_style=param_style, order=order)
+            obj = Function_setting(project_type=project_type, function_name=function_name, param_style=param_style, order=order)
             obj.save()
         else: #表明是插入
             # logger.info('即将插入新记录，正在调整记录的顺序') # 插入记录所在行上方的记录都+1
@@ -88,7 +89,7 @@ def add_function_setting(request):
                     for item in all_objects:
                         item.order = item.order + 1
                         item.save()
-                    obj = Function_setting(function_name=function_name, param_style=param_style, order=order)
+                    obj = Function_setting(project_type=project_type, function_name=function_name, param_style=param_style, order=order)
                     obj.save()
             except Exception as e:
                 logger.error('%s' % e)
@@ -102,16 +103,18 @@ def edit_function_setting(request):
     try:
         params = request.POST
         id = params['id']
+        project_type = params['project_type']
         function_name = params['function_name']
         param_style = params['param_style']
         param_style = param_style.strip()
 
         if not function_name:
             return HttpResponse('函数名称不能为空')
-        elif Function_setting.objects.filter(function_name=function_name).exclude(id=id).exists():
+        elif Function_setting.objects.filter(function_name=function_name).filter(project_type=project_type).exclude(id=id).exists():
             return HttpResponse('函数名称(%s)已存在' % function_name)
 
         obj = Function_setting.objects.get(id=id)
+        obj.project_type = project_type
         obj.function_name = function_name
         obj.param_style = param_style
         obj.save()

@@ -288,7 +288,16 @@ def get_dbs_for_db_obj_type(request):
 def get_funtions_for_func_type(request):
     function_list = []
     try:
-        functions = Function_setting.objects.all().values()
+        project_type = request.GET.get('projectType') # 页面操作|接口请求操作|数据库操作|系统函数调用
+        project_type = project_type.split('|')
+
+        if len(project_type) > 1:
+            project_type1,project_type2 = project_type
+            functions = Function_setting.objects.filter(Q(project_type=project_type1) | Q(project_type=project_type2)).values()
+        else:
+            project_type1 = project_type[0]
+            functions = Function_setting.objects.filter(project_type=project_type1).values()
+        # functions = Function_setting.objects.all().values()
         for function in functions:
             temp_dic = {}
             temp_dic['id'] = str(function['id'])
@@ -412,8 +421,8 @@ def add_ui_case_step(request):
         output_params = params['output_params']
         assert_type = params['assert_type']
         assert_pattern = params['assert_pattern']
-        run_times = params['run_times']
-        try_for_failure = params['try_for_failure']
+        run_times = params['run_times'].strip()
+        try_for_failure = params['try_for_failure'].strip()
         page_name = params['page_name']
         case_id = params['node_id']
         object_id =  params['object_id']
@@ -477,7 +486,6 @@ def add_ui_case_step(request):
 def add_api_case_step(request):
     try:
         params = request.POST
-
         step_order = params['order']
         status = params['status']
         step_type = params['step_type']
@@ -487,7 +495,7 @@ def add_api_case_step(request):
         request_header = params['request_header'].strip()
         request_method = params['request_method']
         url_or_sql = params['url_or_sql'].strip()
-        if not url_or_sql.startswith('/') and step_type not in ('操作数据库', '执行用例'):
+        if not url_or_sql.startswith('/') and step_type not in ('操作数据库', '执行用例',  '执行函数'):
             url_or_sql = '/' + url_or_sql
         input_params = params['input_params'].strip().replace('\'', '\"')
         if input_params.startswith('<xmp>'):
@@ -515,6 +523,8 @@ def add_api_case_step(request):
 
         host = params['host'].strip()
         port = params['port'].strip()
+        run_times = params['run_times'].strip()
+        try_for_failure = params['try_for_failure'].strip()
         case_id = params['case_id']
 
         if step_type == '':
@@ -527,6 +537,18 @@ def add_api_case_step(request):
             return  HttpResponse('保存失败，执行操作不能为空')
         if port !=  '' and not port.isdigit():
             return HttpResponse('保存失败，端口号只能为数字')
+        if not run_times.isdigit() and run_times !=  '':
+            return HttpResponse('保存失败，运行次数只能为数字')
+        if not try_for_failure.isdigit() and try_for_failure !=  '':
+            return HttpResponse('保存失败，失败重试次数只能为数字')
+
+
+        if run_times == '':
+            run_times = '1'
+
+        if try_for_failure == '':
+            try_for_failure = '1'
+
 
         # 检查输出中的定义变了变量命名是否合法
         variable_list = re.findall('\$(.+?)\$', output_params)
@@ -547,7 +569,7 @@ def add_api_case_step(request):
             case_step_obj = API_test_case_step(order=step_order, status=status,step_type=step_type,op_object=op_object, object_id=object_id,exec_operation=exec_operation,
                                     request_header=request_header, request_method=request_method, url_or_sql=url_or_sql, input_params=input_params,
                                     response_to_check=response_to_check,check_rule=check_rule,check_pattern=check_pattern, output_params=output_params,
-                                    protocol=protocol, host=host, port=port, case_id=case_id)
+                                    protocol=protocol, host=host, port=port, run_times=run_times, try_for_failure=try_for_failure, case_id=case_id)
 
             case_step_obj.save()
         else: #表明是插入
@@ -562,7 +584,7 @@ def add_api_case_step(request):
                     case_step_obj = API_test_case_step(order=step_order, status=status,step_type=step_type,op_object=op_object, object_id=object_id,exec_operation=exec_operation,
                                             request_header=request_header, request_method=request_method, url_or_sql=url_or_sql, input_params=input_params,
                                             response_to_check=response_to_check,check_rule=check_rule,check_pattern=check_pattern, output_params=output_params,
-                                            protocol=protocol, host=host, port=port, case_id=case_id)
+                                            protocol=protocol, host=host, port=port, run_times=run_times, try_for_failure=try_for_failure, case_id=case_id)
 
                     case_step_obj.save()
             except Exception as e:
@@ -586,8 +608,8 @@ def update_ui_case_step(request):
         output_params = params['output_params']
         assert_type = params['assert_type']
         assert_pattern = params['assert_pattern']
-        run_times = params['run_times']
-        try_for_failure = params['try_for_failure']
+        run_times = params['run_times'].strip()
+        try_for_failure = params['try_for_failure'].strip()
         page_name = params['page_name']
         object_id = params['object_id']
 
@@ -600,9 +622,15 @@ def update_ui_case_step(request):
         if exec_operation == '' and object_type == '页面元素':
             return  HttpResponse('保存失败，执行操作不能为空')
         if not run_times.isdigit() and run_times !=  '':
-            return HttpResponse('保存失败，重复执行次数只能为数字')
+            return HttpResponse('保存失败，运行次数只能为数字')
         if not try_for_failure.isdigit() and try_for_failure !=  '':
             return HttpResponse('保存失败，失败重试次数只能为数字')
+
+        if run_times == '':
+            run_times = '1'
+
+        if try_for_failure == '':
+            try_for_failure = '0'
 
         ui_case_step_obj = UI_test_case_step.objects.get(id=id)
         ui_case_step_obj.object_type = object_type
@@ -612,7 +640,7 @@ def update_ui_case_step(request):
         ui_case_step_obj.output_params = output_params
         ui_case_step_obj.assert_type = assert_type
         ui_case_step_obj.assert_pattern = assert_pattern
-        ui_case_step_obj.run_times =run_times
+        ui_case_step_obj.run_times = run_times
         ui_case_step_obj.try_for_failure = try_for_failure
         ui_case_step_obj.page_name = page_name
 
@@ -638,7 +666,7 @@ def update_api_case_step(request):
         request_header = params['request_header'].strip()
         request_method = params['request_method']
         url_or_sql = params['url_or_sql'].strip().replace('\'', '\"')
-        if not url_or_sql.startswith('/') and step_type not in ('操作数据库', '执行用例'):
+        if not url_or_sql.startswith('/') and step_type not in ('操作数据库', '执行用例', '执行函数'):
             url_or_sql = '/' + url_or_sql
         input_params = params['input_params'].strip().replace('\'', '\"')
         if input_params.startswith('<xmp>'):
@@ -665,6 +693,8 @@ def update_api_case_step(request):
             return HttpResponse('协议只能为http、https')
         host = params['host'].strip()
         port = params['port'].strip()
+        run_times = params['run_times'].strip()
+        try_for_failure = params['try_for_failure'].strip()
 
         if step_type == '':
             return  HttpResponse('保存失败，对象类型不能为空')
@@ -676,6 +706,16 @@ def update_api_case_step(request):
             return  HttpResponse('保存失败，执行操作不能为空')
         if port !=  '' and not port.isdigit():
             return HttpResponse('保存失败，端口号只能为数字')
+        if not run_times.isdigit() and run_times !=  '':
+            return HttpResponse('保存失败，运行次数只能为数字')
+        if not try_for_failure.isdigit() and try_for_failure !=  '':
+            return HttpResponse('保存失败，失败重试次数只能为数字')
+
+        if run_times == '':
+            run_times = '1'
+
+        if try_for_failure == '':
+            try_for_failure = '0'
 
         # 检查输出中的定义变了变量命名是否合法
         variable_list = re.findall('\$(.+?)\$', output_params)
@@ -701,6 +741,8 @@ def update_api_case_step(request):
         case_step_obj.protocol = protocol
         case_step_obj.host = host
         case_step_obj.port = port
+        case_step_obj.run_times = run_times
+        case_step_obj.try_for_failure = try_for_failure
 
         if object_id != '-1':
             case_step_obj.object_id = object_id

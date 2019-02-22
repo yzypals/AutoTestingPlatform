@@ -41,6 +41,8 @@
         var protocol  = undefined; // 协议
         var host = undefined; // 主机地址       
         var port = undefined;  // 端口
+        var run_times = undefined;  //运行次数
+        var try_for_failure = undefined; // 失败重试次数
         var case_id = undefined;  // 用例ID
         var object_id = -1; //  操作对象ID
         
@@ -158,6 +160,8 @@
                         protocol:row.protocol,
                         host:row.host,
                         port:row.port,
+                        run_times:row.run_times, //运行次数
+                        try_for_failure:row.try_for_failure, // 失败重试次数
                         object_id:row.object_id,
                         case_id:nodeID
                 };
@@ -204,28 +208,36 @@
                 input_params = $.trim(input_params);
                 check_pattern = $.trim(check_pattern);
                 output_params = $.trim(output_params);
+                run_times = $.trim(run_times);
+                try_for_failure = $.trim(try_for_failure);
 
                 if (op_object == '') {
                     $.messager.alert('提示','保存失败，操作对象不能为空', 'warnging');
                     isValid = false;
                 } else if (exec_operation == '') {
                     $.messager.alert('提示','保存失败，执行操作不能为空', 'warnging');
-                    isValid = false;                                  
+                    isValid = false;
                 } else if (url_or_sql == '' && (step_type == '操作数据库' || step_type == '请求接口')) {
                     $.messager.alert('提示','保存失败，URL/SQL不能为空', 'warnging');
-                    isValid = false;                    
+                    isValid = false;
                 } else if (port != '' && parseInt(port).toString() == 'NaN'){
-                    $.messager.alert('提示', '保存失败，端口号只能为数字', 'warnging');
-                    isValid = false;  
-                } 
+                    $.messager.alert('提示', '保存失败，端口号只能为数字, 请修改', 'warnging');
+                    isValid = false;
+                } else if (run_times != '' && isNaN(run_times)){
+                    $.messager.alert('提示', '保存失败，重复执行次数只能为数字', 'warnging');
+                    isValid = false;
+                } else if (try_for_failure != '' && isNaN(try_for_failure)){
+                    $.messager.alert('提示', '保存失败，失败重试次数只能为数字', 'warnging');
+                     isValid = false;
+                }
 
                 if (isValid && request_header !='') {
                     try{
                         request_header = $.parseJSON(request_header); 
                         request_header = JSON.stringify(request_header, null, 2);
                     } catch (e) {
-                        $.messager.alert('提示', '保存失败，请求头必须为json格式');
-                        isValid = false;
+                        $.messager.alert('告警', '请求头必须为json格式，为保证程序正常运行，请检查是否填正确填写', 'warnging');
+                        // isValid = true; // 保存错误输入，提示用户修改，避免用户重新录入的麻烦，
                     }
                 } 
 
@@ -234,8 +246,8 @@
                         input_params = $.parseJSON(input_params);
                         input_params = JSON.stringify(input_params, null, 2);
                     } catch (e) {
-                        $.messager.alert('提示', '保存失败，输入参数必须为json格式');
-                        isValid = false;  
+                        $.messager.alert('告警', '输入参数必须为json格式，为保证程序正常运行，请检查是否填正确填写', 'warnging');
+                       // isValid = false;
                     }
                 }
 				
@@ -249,30 +261,32 @@
                     }
                 } 
 				
-                if (isValid && check_pattern != '' && step_type != '操作数据库') {
+                //if (isValid && check_pattern != '' && step_type != '操作数据库') {
+                if (isValid && check_pattern != '') {
+
                     try {
                         check_pattern = $.parseJSON(check_pattern);
                         check_pattern = JSON.stringify(check_pattern, null, 2);
                     } catch (e) {
-                        $.messager.alert('提示', '保存失败，“校验模式”必须为json格式');
-                        isValid = false;  
+                        $.messager.alert('告警', '校验模式必须为json格式，为保证程序正常运行，请检查是否填正确填写', 'warnging');
+                        // isValid = false;
                     }
                 }
 
-                if (isValid && check_pattern != '' && step_type == '操作数据库') {
-                    if (output_params == '') {
-                        $.messager.alert('提示', '保存失败，“输出”不为空“校验模式”才可用');
-                        isValid = false;  
-                    }
-                }
+                //if (isValid && check_pattern != '' && step_type == '操作数据库') {
+                //    if (output_params == '') {
+                //        $.messager.alert('告警', '保存失败，“输出”不为空“校验模式”才可用，为保证程序正常运行，请检查是否填正确填写', 'warnging');
+                //        // isValid = false;
+                //    }
+                //}
                 
                 if (isValid && output_params != '') {
                     try {
                         output_params = $.parseJSON(output_params);
                         output_params = JSON.stringify(output_params, null, 2);
                     } catch (e) {
-                        $.messager.alert('提示', '保存失败，“输出”必须为json格式');
-                        isValid = false;  
+                        $.messager.alert('告警', '保存失败，“输出”必须为json格式，为保证程序正常运行，请检查是否填正确填写', 'warnging');
+                        // isValid = false;
                     }
                 } 
 
@@ -310,6 +324,8 @@
                         protocol:protocol,
                         host:host,
                         port:port,
+                        run_times:run_times,
+                        try_for_failure:try_for_failure,
                         object_id:object_id,
                         case_id:nodeID
                     };
@@ -331,6 +347,8 @@
                         protocol:protocol,
                         host:host,
                         port:port,
+                        run_times:run_times,
+                        try_for_failure:try_for_failure,
                         object_id:object_id,
                     };
                 }
@@ -397,6 +415,8 @@
             protocol = $(this).datagrid('getEditor', {index: index, field:'protocol'}).target.val();
             host = $(this).datagrid('getEditor', {index: index, field:'host'}).target.val();
             port = $(this).datagrid('getEditor', {index: index, field:'port'}).target.val();
+            run_times = $(this).datagrid('getEditor', {index: index,field: 'run_times'}).target.val();
+            try_for_failure = $(this).datagrid('getEditor', {index: index,field: 'try_for_failure'}).target.val();
         }
 
         // 点击表格 修改 按钮的函数实现
@@ -464,7 +484,9 @@
             var protocolEditor = $('#API_test_case_step').datagrid('getEditor', {index: editIndex, field:'protocol'});
             var hostEditor =  $('#API_test_case_step').datagrid('getEditor', {index: editIndex, field:'host'});
             var portEditor = $('#API_test_case_step').datagrid('getEditor', {index: editIndex, field:'port'});
- 
+            var runTimesEditor = $('#API_test_case_step').datagrid('getEditor', {index: editIndex,field: 'run_times'});
+            var tryForFailureEditor = $('#API_test_case_step').datagrid('getEditor', {index: editIndex,field: 'try_for_failure'});
+
             var currentTab = window.parent.$('#tabs').tabs('getSelected');
             var tabID = currentTab.panel('options').id;
             var projectID = tabID.split('-')[0];
@@ -483,6 +505,8 @@
                 protocolEditor.target.val('');
                 hostEditor.target.val('');
                 portEditor.target.val('');
+                runTimesEditor.target.val('1');
+                tryForFailureEditor.target.val('1');
             }
             if (stepType == '请求接口') {
                 // 请求操作对象
@@ -638,6 +662,64 @@
  
                 // 禁用校验模式
                 checkPatternEditor.target.attr('disabled', true); 
+
+                // 禁用 协议
+                protocolEditor.target.attr('disabled', true);
+
+                // 禁用主机
+                hostEditor.target.attr('disabled', true);
+
+                // 禁用端口
+                portEditor.target.attr('disabled', true);
+            } else if (stepType == '执行函数') {
+                // 请求操作对象，即可执行函数
+                $.get('/action/getFuntionsForFuncType?projectType=API项目|所有项目', function(data,status) {
+                    var jsonData = JSON.parse(data);
+                    if (jsonData['result'] == 'success') {
+                        opObjectEditor.target.combobox('loadData', jsonData['choices']);
+                    } else {
+                        $.messager.alert('错误信息', '获取可执行函数出错：' + jsonData['choices'], 'error');
+                    }
+                });
+
+                // 设置可执行操作
+                operationEditor.target.combobox('clear');
+                operationEditor.target.combobox('loadData',[{"id":"0","choice":"CALL"}]);
+                operationEditor.target.combobox('setText', 'CALL');
+
+                // 请求可用校验规则
+                $.get('/action/getAssertionsForObjectType?opType=系统函数调用|接口请求操作', function(data,status) {
+                    var jsonData = JSON.parse(data);
+                    if (jsonData['result'] == 'success') {
+                        checkRuleEditor.target.combobox('loadData', jsonData['choices']);
+                    } else {
+                        $.messager.alert('错误信息', '获取可用断言出错: ' + jsonData['choices'], 'error');
+                    }
+                });
+
+                // 禁用 请求头  附：只读设置 attr('readonly', true);
+                requestHeaderEditor.target.attr('disabled', true);
+
+                // 设置请求方法
+                requestMothodEditor.target.combobox('loadData', [{'id':0, 'choice':'--'}]);
+
+                // 禁用URL、Sql 输入
+                urlOrSqlEditor.target.attr('disabled', true);
+
+                // 启用 输入参数
+                inputParamsEditor.target.attr('disabled', false);
+
+                // 启用 输出参数
+                outputParamsEditor.target.attr('disabled', false);
+
+                // 设置“检查响应”
+                checkResponseEditor.target.combobox('loadData', [{'id':0, 'choice':'body'}]);
+
+                // 启用校验规则
+                checkRuleEditor.target.combobox('enable');
+
+                // 启用用校验模式
+                checkPatternEditor.target.attr('disabled', false);
 
                 // 禁用 协议
                 protocolEditor.target.attr('disabled', true);
@@ -818,7 +900,6 @@
         pageSize: 25,//每页显示的记录条数，默认为10    
         pageList: [25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100],//可以设置每页记录条数的列表  
         nowrap: false,
-      
         method: 'get',
         onEndEdit:onEndEdit,
         onBeforeLoad:onBeforeLoad,
@@ -839,7 +920,7 @@
                         options:{
                             valueField:'id',
                             textField:'choice',
-                            data:[{id:1, choice:'请求接口'},{id:2, choice:'操作数据库'}, {id:3, choice:'执行用例'}],
+                            data:[{id:1, choice:'请求接口'},{id:2, choice:'操作数据库'}, {id:3, choice:'执行用例'}, {id:4, choice:'执行函数'}],
                             required:true,
                             editable:false,
                             width:'500px',
@@ -914,6 +995,8 @@
                 <th data-options="field:'protocol', align: 'center', editor:{type:'text'}" width="50px">协议</th>
                 <th data-options="field:'host', align: 'left', editor:{type:'text'}" width="150px">主机地址</th>                 
                 <th data-options="field:'port', align: 'center', editor:{type:'text'}" width="60px">端口</th>
+                <th data-options="field:'run_times', align: 'center', editor:{type:'text'},fitColumns:true">运行次数</th>
+                <th data-options="field:'try_for_failure', align: 'center', editor:{type:'text'},fitColumns:true">失败重试次数</th>
                 <th data-options="field:'operation',title:'操作', align: 'center', fitColumns:false,
                 formatter:function(value,row,index){
                     return formatOperationColumn(value,row,index);}"  

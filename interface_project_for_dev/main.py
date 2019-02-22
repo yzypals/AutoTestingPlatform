@@ -28,7 +28,7 @@ if __name__ == '__main__':
         else:
             is_debug = False
 
-        if run_mode == 'SingleProject':
+        if run_mode.lower() == 'rop':
             logger.info('运行单项目,待执行的运行计划编码：%s' % running_plan_num)
             logger.info('正在查询运行计划相关信息')
             try:
@@ -61,7 +61,7 @@ if __name__ == '__main__':
                     logger.error('查询运行计划相关信息失败：%s' % result[1])
             except Exception as e:
                 logger.error('%s' % e)
-        elif run_mode == 'ALLProject':
+        elif run_mode.lower() == 'rap':
             logger.info('运行所有项目')
         elif run_mode.lower() == 'debug':
             logger.info('调试模式')

@@ -182,9 +182,7 @@
             if (editIndex == undefined) {
                 $.messager.alert('提示', '操作失败，没有正在编辑的记录', 'info');
                 return;
-            } 
-            console.log(object_type);
-            console.log(exec_operation);
+            }
             if ($('#UI_test_case_step').datagrid('validateRow', editIndex)){
                 $('#UI_test_case_step').datagrid('endEdit', editIndex);
                 var isValid = true;
@@ -370,7 +368,7 @@
             var outParamsEditor = $('#UI_test_case_step').datagrid('getEditor', {index: editIndex, field:'output_params'});
             var assertTypeEditor = $('#UI_test_case_step').datagrid('getEditor', {index: editIndex,field: 'assert_type'});
             var assertPatternEditor = $('#UI_test_case_step').datagrid('getEditor', {index: editIndex,field: 'assert_pattern'});   
-            var runTimesEditor = $('#UI_test_case_step').datagrid('getEditor', {index: editIndex,field: 'run_times'}); 
+            var runTimesEditor = $('#UI_test_case_step').datagrid('getEditor', {index: editIndex,field: 'run_times'});
             var tryForFailureEditor = $('#UI_test_case_step').datagrid('getEditor', {index: editIndex,field: 'try_for_failure'});
 
 
@@ -390,6 +388,8 @@
                 outParamsEditor.target.val('');
                 assertTypeEditor.target.combobox('clear'); 
                 assertPatternEditor.target.val(''); // 清空断言模式
+                runTimesEditor.target.val('1');
+                tryForFailureEditor.target.val('1');
             }
 
    
@@ -523,7 +523,7 @@
                 pageNameEditor.target.combobox('setText', '--');
      
                 // 请求操作对象，即可执行函数
-                $.get('/action/getFuntionsForFuncType', function(data,status) {
+                $.get('/action/getFuntionsForFuncType?projectType=UI项目|所有项目', function(data,status) {
                     var jsonData = JSON.parse(data);
                     if (jsonData['result'] == 'success') {
                         objectEditor.target.combobox('loadData', jsonData['choices']);
@@ -862,7 +862,7 @@
                 <th data-options="field:'input_params', align: 'left', editor:{type:'text'}" width="300px" rowspan="2">输入参数</th>         
                 <th data-options="field:'output_params', align: 'left', editor:{type:'text'}" width="150px" rowspan="2">输出参数</th> 
                 <th colspan="2">预期结果</th> 
-                <th data-options="field:'run_times', align: 'center', editor:{type:'text'},fitColumns:true" rowspan="2">重复执行次数</th>
+                <th data-options="field:'run_times', align: 'center', editor:{type:'text'},fitColumns:true" rowspan="2">运行次数</th>
                 <th data-options="field:'try_for_failure', align: 'center', editor:{type:'text'},fitColumns:true" rowspan="2">失败重试次数</th>  
                 <th data-options="field:'operation',title:'操作', align: 'center', fitColumns:false,
                 formatter:function(value,row,index){

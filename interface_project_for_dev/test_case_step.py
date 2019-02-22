@@ -17,6 +17,7 @@ from httpprotocol import MyHttp
 
 from interface.APIUnittestTestCase import *
 from database.DBUnittestTestCase import *
+from function.FuncUnittestTestCase import *
 
 
 class TestCaseStep:
@@ -44,6 +45,8 @@ class TestCaseStep:
         self.port = port
         self.global_headers = global_headers
         self.http = MyHttp(protocol, host, port)
+        self.func_map = {'死等待':'test_sleep'} # 存放函数中文名称及代码层函数的映射关系
+
 
     def set_check_pattern(self, check_pattern):
         self.check_pattern = check_pattern
@@ -72,11 +75,10 @@ class TestCaseStep:
         try:
             # 获取开始运行时间
             start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
+            logger.info('步骤类型：%s' % self.step_type)
+            logger.info('步骤操作对象：%s' % self.op_object)
+            logger.info('执行操作：%s' % self.exec_operation)
             if self.step_type == '请求接口':
-                logger.info('步骤类型：请求接口')
-                logger.info('步骤操作对象：%s' % self.op_object)
-                logger.info('执行操作：%s' % self.exec_operation)
-
                 if self.request_headers:
                     logger.info('正在替换“请求头”中的动态参数')
                     self.request_headers = self.replace_variable(self.request_headers)
@@ -95,13 +97,15 @@ class TestCaseStep:
                 class_name = self.op_object
                 exec_operation = self.exec_operation
             elif self.step_type == '操作数据库':
-                logger.info('步骤类型：操作数据库')
-                logger.info('步骤操作对象：%s' % self.op_object)
-                logger.info('执行操作：%s' % self.exec_operation)
-
                 class_name = 'DBUnittestTestCase'
                 exec_operation = 'test_' + self.exec_operation
                 request_headers = ''
+            elif self.step_type == '执行函数':
+                class_name = 'FuncUnittestTestCase'
+                exec_operation = self.func_map.get(self.op_object)
+                request_headers = ''
+
+
             if self.input_params:
                 logger.info('正在替换“输入参数”中的动态参数')
                 self.input_params = self.replace_variable(self.input_params)
@@ -151,11 +155,14 @@ class TestCaseStep:
         finally:
             if not debug:
                 logger.info('======================正在记录用例步骤运行结果到测试报告-用例步骤执行明细表======================')
-                if self.step_type != '操作数据库':
+                if self.step_type not in ['操作数据库', '执行函数']:
                     self.input_params = self.http.get_request_param()
                     if type(self.input_params) == type(b''):
                         self.input_params = self.input_params.decode('utf-8')
                     request_headers = json.dumps(request_headers, ensure_ascii=False, indent=4)
+                else:
+                    self.http.protocol, self.host, self.port = '', '', ''
+
                 if self.check_pattern:
                     self.check_pattern = "[" + json.dumps(self.check_pattern[0], ensure_ascii=False, indent=4) + "]"
 

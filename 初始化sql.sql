@@ -109,16 +109,16 @@ CREATE INDEX idx_api_execution_num_planid_runresult ON `website_api_test_report_
 CREATE INDEX idx_api_planid_subnode_num_order ON `website_api_case_tree_test_plan`(plan_id, sub_node_num, `order`);
 
 # 初始化函数配置
-insert into `website_function_setting` (`id`, `function_name`, `param_style`, `order`) values('1','智能等待','5','1');
-insert into `website_function_setting` (`id`, `function_name`, `param_style`, `order`) values('2','死等待','5','2');
-insert into `website_function_setting` (`id`, `function_name`, `param_style`, `order`) values('3','切换至窗口ByName','目标窗口的窗口名称','3');
-insert into `website_function_setting` (`id`, `function_name`, `param_style`, `order`) values('4','切换至窗口ByPageTitle','目标窗口的当前页面标题','4');
-insert into `website_function_setting` (`id`, `function_name`, `param_style`, `order`) values('5','切换至窗口ByUrl','目标窗口的当前访问的URL','5');
-insert into `website_function_setting` (`id`, `function_name`, `param_style`, `order`) values('6','关闭当前窗口','','6');
-insert into `website_function_setting` (`id`, `function_name`, `param_style`, `order`) values('7','跳转到URL','/page/platform/home.html','7');
-insert into `website_function_setting` (`id`, `function_name`, `param_style`, `order`) values('8','浏览器前进','','8');
-insert into `website_function_setting` (`id`, `function_name`, `param_style`, `order`) values('9','浏览器后退','','9');
-insert into `website_function_setting` (`id`, `function_name`, `param_style`, `order`) values('10','拖动垂直滚动条','顶部  or  底部','10');
+insert into `website_function_setting` (`id`, `function_name`, `param_style`, `order`, `project_type`) values('1','智能等待','5','1','UI项目');
+insert into `website_function_setting` (`id`, `function_name`, `param_style`, `order`, `project_type`) values('2','死等待','5','2','所有项目');
+insert into `website_function_setting` (`id`, `function_name`, `param_style`, `order`, `project_type`) values('3','切换至窗口ByName','目标窗口的窗口名称','3','UI项目');
+insert into `website_function_setting` (`id`, `function_name`, `param_style`, `order`, `project_type`) values('4','切换至窗口ByPageTitle','目标窗口的当前页面标题','4','UI项目');
+insert into `website_function_setting` (`id`, `function_name`, `param_style`, `order`, `project_type`) values('5','切换至窗口ByUrl','目标窗口的当前访问的URL','5','UI项目');
+insert into `website_function_setting` (`id`, `function_name`, `param_style`, `order`, `project_type`) values('6','关闭当前窗口','','6','UI项目');
+insert into `website_function_setting` (`id`, `function_name`, `param_style`, `order`, `project_type`) values('7','跳转到URL','/page/platform/home.html','7','UI项目');
+insert into `website_function_setting` (`id`, `function_name`, `param_style`, `order`, `project_type`) values('8','浏览器前进','','8','UI项目');
+insert into `website_function_setting` (`id`, `function_name`, `param_style`, `order`, `project_type`) values('9','浏览器后退','','9','UI项目');
+insert into `website_function_setting` (`id`, `function_name`, `param_style`, `order`, `project_type`) values('10','拖动垂直滚动条','顶部  or  底部','10','UI项目');
 
 # 注意：这里的5，意为5秒
 

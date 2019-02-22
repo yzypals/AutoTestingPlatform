@@ -80,20 +80,16 @@ class MyHttp:
         logger.info('发起的请求为：GET %s' % url)
         logger.info('请求头为：%s' % str(self.headers))
         request = urllib.request.Request(url, headers=self.headers)
-        exec_count = 0
-        while exec_count <= 1:
-            try:
-                response = urllib.request.urlopen(request)
-                response_body = response.read()
-                response_header = response.getheaders()
-                response_status_code = response.status
-                response = [response_body, response_header, response_status_code]
-                exec_count = 2
-            except Exception as e:
-                exec_count = exec_count + 1
-                reason = '%s' % e
-                response = [None, reason]
-                logger.error('发送请求失败，原因：%s,正在进行第%s次尝试' % (e, exec_count))
+        try:
+            response = urllib.request.urlopen(request)
+            response_body = response.read()
+            response_header = response.getheaders()
+            response_status_code = response.status
+            response = [response_body, response_header, response_status_code]
+        except Exception as e:
+            reason = '%s' % e
+            response = [None, reason]
+            logger.error('发送请求失败，原因：%s' % e)
         return  response
 
     # 封装HTTP POST请求方法
@@ -105,20 +101,16 @@ class MyHttp:
         logger.info('请求参数为：%s' % data)
         logger.info('请求头为：%s' % str(self.headers))
         request = urllib.request.Request(url, headers=self.headers, method='POST')
-        exec_count = 0
-        while exec_count <= 1:
-            try:
-                response = urllib.request.urlopen(request, data)
-                response_body = response.read()
-                response_header = response.getheaders()
-                response_status_code = response.status
-                response = [response_body, response_header, response_status_code]
-                exec_count = 2
-            except Exception as e:
-                exec_count = exec_count + 1
-                reason = '%s' % e
-                response = [None, reason]
-                logger.error('发送请求失败，原因：%s,正在进行第%s次尝试' % (e, exec_count))
+        try:
+            response = urllib.request.urlopen(request, data)
+            response_body = response.read()
+            response_header = response.getheaders()
+            response_status_code = response.status
+            response = [response_body, response_header, response_status_code]
+        except Exception as e:
+            reason = '%s' % e
+            response = [None, reason]
+            logger.error('发送请求失败，原因：%s' % e)
         return  response
 
     # 封装HTTP DELETE请求方法
@@ -129,20 +121,17 @@ class MyHttp:
         logger.info('请求参数为：%s' % data)
         logger.info('请求头为：%s' % str(self.headers))
         request = urllib.request.Request(url, headers=self.headers, method='DELETE')
-        exec_count = 0
-        while exec_count <= 1:
-            try:
-                response = urllib.request.urlopen(request, data)
-                response_body = response.read()
-                response_header = response.getheaders()
-                response_status_code = response.status
-                response = [response_body, response_header, response_status_code]
-                exec_count = 2
-            except Exception as e:
-                exec_count = exec_count + 1
-                reason = '%s' % e
-                response = [None, reason]
-                logger.error('发送请求失败，原因：%s,正在进行第%s次尝试' % (e, exec_count))
+        try:
+            response = urllib.request.urlopen(request, data)
+            response_body = response.read()
+            response_header = response.getheaders()
+            response_status_code = response.status
+            response = [response_body, response_header, response_status_code]
+            exec_count = 2
+        except Exception as e:
+            reason = '%s' % e
+            response = [None, reason]
+            logger.error('发送请求失败，原因：%s' % e)
         return  response
 
     # 封装HTTP xxx请求方法

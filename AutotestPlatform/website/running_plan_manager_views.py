@@ -200,7 +200,7 @@ def exec_running_plan(request):
         obj.save()
 
         def run_running_plan():
-            args = 'cd /d '+ script_dirpath + '&' + '"'+ python_path + '" main.py ' + 'SingleProject ' + str(running_plan_num)
+            args = 'cd /d '+ script_dirpath + '&' + '"'+ python_path + '" main.py ' + 'rop ' + str(running_plan_num)
             code = os.system(args)
             if code:
                 logger.error('execute running plan fail')

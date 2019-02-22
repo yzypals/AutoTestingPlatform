@@ -147,7 +147,7 @@
                     $.messager.alert('提示','保存失败，变量名不能为空', 'warnging');
                     isValid=false;
                 } else if (name.toLowerCase().indexOf('global_') != 0) {
-                    $.messager.alert('提示', '保存失败，变量名称必须以“global_”开头');
+                    $.messager.alert('提示', '保存失败，变量名称必须以“global_”开头(大小写不限)');
                     isValid = false;
                 } else if (value == '') {
                     $.messager.alert('提示','保存失败，变量值不能为空', 'warnging');

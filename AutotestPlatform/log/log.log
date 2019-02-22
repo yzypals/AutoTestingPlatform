@@ -1,0 +1,3 @@
+2019-02-21 18:05:58,560 function_setting_views.py 70 ERROR  error, 函数名称(智能等待)已存在
+2019-02-21 18:13:24,430 function_setting_views.py 70 ERROR  error, 函数名称(aa)已存在
+2019-02-22 09:37:59,181 running_plan_manager_views.py 206 ERROR  execute running plan fail

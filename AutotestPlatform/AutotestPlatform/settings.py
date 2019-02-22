@@ -89,7 +89,7 @@ DATABASES = {
         'NAME': 'testplatform',
         'USER': 'testacc',
         'PASSWORD': 'test1234',
-        'HOST': '10.118.59.84',
+        'HOST': '10.202.200.166',
         'PORT': '3306',
         'OPTION':{
             'init_command': 'SET default_storage_engine=INNODB'

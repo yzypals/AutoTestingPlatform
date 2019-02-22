@@ -33,7 +33,12 @@ class MyUnittestTestCase(unittest.TestCase):
         if self.check_pattern:
             logger.info('正在替换“校验模式”中的动态参数')
             self.check_pattern = self.case_step.replace_variable(self.check_pattern)
-            self.check_pattern = eval(self.check_pattern)
+            try:
+                self.check_pattern = eval(self.check_pattern)
+            except Exception as e:
+                logger.error('校验模式:\n%s \n填写错误：%s，停止断言输出' % (self.check_pattern, e))
+                self.assertEqual(1, 0, msg='fail#%s' % e)
+                return
 
             self.case_step.set_check_pattern(self.check_pattern)
 

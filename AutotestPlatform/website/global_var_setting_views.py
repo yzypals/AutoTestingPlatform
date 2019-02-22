@@ -54,14 +54,13 @@ def add_global_var_setting(request):
     try:
         params = request.POST
 
-        name = params['name'].replace(' ', '').replace('\t', '').replace('-', '').lower()
+        name = params['name'].strip().replace(' ', '').replace('\t', '').replace('-', '')
         value = params['value']
         project_type = params['project_type']
         project_name = params['project_name']
         project_id = params['project_id']
         environment = params['environment']
         order = params['order']
-
         if name == '':
             return HttpResponse('变量名不能为空')
         elif Global_variable_setting.objects.filter(project_id=project_id).filter(name=name).exists():
@@ -82,7 +81,8 @@ def add_global_var_setting(request):
                 order = max_order + 1
             else:
                 order = 1
-            obj = Global_variable_setting(name=name, value=value, project_type=project_type, project_name=project_name, environment=environment, order=order, project_id=project_id)
+            name = name[:7].lower() + name[7:]
+            obj = Global_variable_setting(name=name , value=value, project_type=project_type, project_name=project_name, environment=environment, order=order, project_id=project_id)
             obj.save()
         else: #表明是插入
             # logger.info('即将插入新记录，正在调整记录的顺序') # 插入记录所在行上方的记录都+1
@@ -111,7 +111,7 @@ def edit_global_var_setting(request):
         params = request.POST
 
         id = params['id']
-        name = params['name'].replace(' ', '').replace('\t', '').replace('-', '').lower()
+        name = params['name'].replace(' ', '').replace('\t', '').replace('-', '')
         value = params['value']
         project_type = params['project_type']
         project_name = params['project_name']
@@ -132,7 +132,8 @@ def edit_global_var_setting(request):
             return HttpResponse('所属环境不能为空')
 
         obj = Global_variable_setting.objects.get(id=id)
-        obj.name = name
+        obj.name = name[:7].lower() + name[7:]
+
         obj.value = value
         obj.project_type = project_type
         obj.project_name = project_name

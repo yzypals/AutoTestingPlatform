@@ -52,7 +52,7 @@ class API_project_setting(models.Model):
     id = models.AutoField(primary_key=True)            # ID, 主键
     project_name = models.CharField(max_length=50)      # 项目名称
     protocol = models.CharField(max_length=10)          # 协议 http、http
-    host = models.CharField(max_length=100)              # 主机地址
+    host = models.CharField(max_length=200)             # 主机地址
     port = models.IntegerField()                        # 端口
     environment = models.CharField(max_length=20)       # 所属环境
     valid_flag = models.CharField(max_length=5)         # 是否启用标识（启用|禁用）
@@ -156,7 +156,7 @@ class Database_setting(models.Model):
     db_type = models.CharField(max_length=10)       # 数据库类型
     db_alias = models.CharField(max_length=20)      # 数据库别名，唯一
     db_name = models.CharField(max_length=20)       # 数据库名称
-    db_host = models.CharField(max_length=20)       # ip,host
+    db_host = models.CharField(max_length=200)       # ip,host
     db_port = models.IntegerField()                 # 端口
     db_user = models.CharField(max_length=20)       # 数据库用户名
     db_passwd = models.CharField(max_length=20)     # 数据库用户密码
@@ -180,6 +180,7 @@ class Function_setting(models.Model):
     function_name = models.CharField(max_length=20)    # 函数名称
     param_style = models.CharField(max_length=100)     # 参数样例
     order = models.IntegerField()                      # 顺序
+    project_type = models.CharField(max_length=10)     # 项目类型
 
 # 断言类型配置
 class Assertion_type_setting(models.Model):
@@ -248,8 +249,10 @@ class API_test_case_step(models.Model):
     check_pattern = models.CharField(max_length=3000)    # 校验模式
     output_params = models.TextField(max_length=6000)    # 输出
     protocol = models.CharField(max_length=10)           # 协议 http、https
-    host = models.CharField(max_length=30)               # 主机地址
+    host = models.CharField(max_length=200)               # 主机地址
     port = models.CharField(max_length=6)                # 端口
+    run_times = models.IntegerField()                    # 运行次数
+    try_for_failure = models.IntegerField()              # 失败重试次数
     status = models.CharField(max_length=5)              # 步骤状态 启用|禁用
     case = models.ForeignKey(API_case_tree, to_field='id', on_delete=models.PROTECT) #节点ID，即用例ID
 
@@ -409,7 +412,7 @@ class API_test_report_for_case_step(models.Model):
     object_id = models.BigIntegerField()                 # 对象ID(数据库ID,用例ID)
     exec_operation = models.CharField(max_length=50)     # 要执行的操作
     protocol = models.CharField(max_length=10)           # 协议 http、https
-    host = models.CharField(max_length=30)               # 主机地址
+    host = models.CharField(max_length=200)               # 主机地址
     port = models.CharField(max_length=6)                # 端口
     request_header = models.CharField(max_length=2000)   # 请求头
     request_method = models.CharField(max_length=10)     # 请求方法

@@ -100,7 +100,7 @@
                 var row = $('#Database_setting').datagrid('selectRow', editIndex);
                 $(row).datagrid('beginEdit', editIndex);
 
-                $(row).datagrid('getEditor', {index: editIndex,field: 'db_type'}).target.combobox('setText', 'MySQL');
+                $(row).datagrid('getEditor', {index: editIndex,field: 'editRow'}).target.combobox('setText', 'MySQL');
  
                 // // 设置项目类型，默认为 UI项目
                 $(row).datagrid('getEditor', {index: editIndex, field: 'project_type'}).target.combobox('setValue', 'UI项目');

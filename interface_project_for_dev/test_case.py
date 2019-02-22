@@ -31,7 +31,7 @@ class TestCase:
 
             logger.info('正在查询测试用例[ID：%s, 名称：%s]关联的测试步骤' % (self.case_id, self.case_name))
             query = 'SELECT id, `order`, step_type, op_object, object_id, exec_operation, request_header, request_method, url_or_sql, input_params, ' \
-                    'response_to_check, check_rule, check_pattern,  output_params, protocol, host, port ' \
+                    'response_to_check, check_rule, check_pattern,  output_params, protocol, host, port, run_times, try_for_failure ' \
                     'FROM `website_api_test_case_step`  WHERE case_id=%s AND  status=\'启用\' ORDER BY `order` ASC'
             data = (self.case_id,)
             result = test_platform_db.select_many_record(query, data)
@@ -44,7 +44,7 @@ class TestCase:
                 for record in records:
                     step_id, order, step_type, op_object, object_id, exec_operation, request_header, \
                     request_method, url_or_sql, input_params, response_to_check, check_rule, \
-                    check_pattern,  output_params, protocol, host, port = record
+                    check_pattern,  output_params, protocol, host, port, run_times, try_for_failure = record
                     if protocol != '':
                         protocol = protocol
                     else:
@@ -58,36 +58,54 @@ class TestCase:
                     else:
                         port = self.port
 
-                    if step_type == '执行用例':
-                        # 获取开始运行时间
-                        start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-                        level_list = op_object.split('->') # op_object即为case_path
-                        case_name = level_list[len(level_list) - 1]
-                        test_case = TestCase(self.execution_num, self.plan_id, object_id, op_object, case_name, self.protocol, self.host, self.port, self.global_headers)
-                        logger.info('======================开始运行测试步骤[第 %s 步, 步骤ID: %s]======================' % (order, step_id))
-                        logger.info('步骤类型：执行用例')
-                        logger.info('步骤操作对象：%s, ID：%s' % (op_object, object_id))
-                        result = test_case.run(debug)
+                    run_times, try_for_failure = int(run_times), int(try_for_failure)
+                    flag = False # 标记步骤重复运行过程中是否出错
+                    for i in range(0, run_times): # 运行指定次数
+                        if step_type == '执行用例':
+                            # 获取开始运行时间
+                            start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
+                            level_list = op_object.split('->') # op_object即为case_path
+                            case_name = level_list[len(level_list) - 1]
+                            test_case = TestCase(self.execution_num, self.plan_id, object_id, op_object, case_name, self.protocol, self.host, self.port, self.global_headers)
+                            logger.info('======================开始运行测试步骤[第 %s 步, 步骤ID: %s]======================' % (order, step_id))
+                            logger.info('步骤类型：执行用例')
+                            logger.info('步骤操作对象：%s, ID：%s' % (op_object, object_id))
 
-                        if not debug:
-                            logger.info('======================正在记录用例步骤运行结果到测试报告-用例步骤执行明细表======================')
-                            data = (self.execution_num, self.plan_id, self.case_id, step_id, order, step_type, op_object, object_id, exec_operation,
+                            retry = 0 # 失败重试次数
+                            result = test_case.run(debug)
+                            while not result[0] and retry <= try_for_failure:
+                                retry += 1
+                                result = test_case.run(debug)
+                                logger.error('步骤[第 %s 步, 步骤ID: %s]运行失败, 正在进行第 %s 次重试' % (order, step_id, str(retry)))
+
+                            if not debug: # 不是调试运行，
+                                logger.info('======================正在记录用例步骤运行结果到测试报告-用例步骤执行明细表======================')
+                                data = (self.execution_num, self.plan_id, self.case_id, step_id, order, step_type, op_object, object_id, exec_operation,
                                         protocol, host, port, request_header, request_method, url_or_sql, input_params,
                                         response_to_check, check_rule, str(check_pattern), str(output_params), result[1], result[2], start_time, 0)
-                            test_reporter.insert_report_for_case_step(data)
-                    else:
-                        test_case_step = TestCaseStep(self.execution_num, self.plan_id, self.case_id, step_id, order, step_type, op_object, object_id, exec_operation, request_header, \
-                        request_method, url_or_sql, input_params, response_to_check, check_rule, \
-                        check_pattern,  output_params, protocol, host, port, self.global_headers)
-                        logger.info('======================开始运行测试步骤[第 %s 步, 步骤ID: %s]======================' % (order, step_id))
-                        result = test_case_step.run(debug)
-
-                    if not result[0]:
-                        logger.error('步骤[第 %s 步, 步骤ID: %s]运行失败' % (order, step_id))
-                        if not debug:
-                            result = [result[0], result[1], '步骤[第 %s 步, 步骤ID: %s]运行失败' % (order, step_id)]
+                                test_reporter.insert_report_for_case_step(data)
                         else:
-                            result =  [result[0], result[1], '步骤[第 %s 步, 步骤ID: %s]运行失败:%s' % (order, step_id, result[2])]
+                            test_case_step = TestCaseStep(self.execution_num, self.plan_id, self.case_id, step_id, order, step_type, op_object, object_id, exec_operation, request_header, \
+                                                          request_method, url_or_sql, input_params, response_to_check, check_rule, \
+                                                          check_pattern,  output_params, protocol, host, port, self.global_headers)
+                            logger.info('======================开始运行测试步骤[第 %s 步, 步骤ID: %s]======================' % (order, step_id))
+                            result = test_case_step.run(debug)
+
+                            retry = 0
+                            while not result[0] and retry <= try_for_failure:
+                                retry += 1
+                                logger.error('步骤[第 %s 步, 步骤ID: %s]运行失败, 正在进行第 %s 次重试' % (order, step_id, str(retry)))
+                                result = test_case_step.run(debug)
+
+                        if not result[0]:
+                            logger.error('步骤[第 %s 步, 步骤ID: %s]运行失败' % (order, step_id))
+                            if not debug:
+                                result = [result[0], result[1], '步骤[第 %s 步, 步骤ID: %s]运行失败' % (order, step_id)]
+                            else:
+                                result =  [result[0], result[1], '步骤[第 %s 步, 步骤ID: %s]运行失败:%s' % (order, step_id, result[2])]
+                            flag = True
+                            break
+                    if flag: # 有步骤运行出错，停止执行剩余步骤
                         break
             elif result[0] and not result[1]:
                 logger.error('未查找到同测试用例关联的测试步骤')

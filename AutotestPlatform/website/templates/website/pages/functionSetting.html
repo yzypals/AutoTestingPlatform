@@ -19,8 +19,9 @@
         var ID = undefined;     // 存放行自增ID
 
         // 用于存储记录行中处于编辑，还未保存的值
-        var function_name = undefined;  //项目名称
-        var param_style = undefined;  //项目主页
+        var project_type = undefined; // 项目类型
+        var function_name = undefined;  // 函数名称
+        var param_style = undefined;  //参数样例
         var order = undefined; // 顺序
 
         function onLoadSuccess(data) {
@@ -90,6 +91,8 @@
                 var row = $('#Function_setting').datagrid('selectRow', editIndex);
                 $(row).datagrid('beginEdit', editIndex);
 
+                $(row).datagrid('getEditor', {index: editIndex, field: 'project_type'}).target.combobox('setValue', 'UI项目');
+
                 ifInsert = true;
             }                
         }
@@ -123,7 +126,8 @@
 
                 if (ifInsert == true) { // 新增
                     var url = '/action/addFunctionSetting';
-                    var params = {   
+                    var params = {
+                        project_type:project_type,
                         function_name:function_name,
                         param_style:param_style,
                         order:order
@@ -132,6 +136,7 @@
                     var url = '/action/editFunctionSetting';
                     var params = {
                         id:ID,
+                        project_type:project_type,
                         function_name:function_name,
                         param_style:param_style
                     };
@@ -183,6 +188,7 @@
         // 结束编辑时自动触发的事件函数实现
         function onEndEdit(index, row) {
             // 获取单元格中输入的内容
+            project_type = $(this).datagrid('getEditor', {index: index,field: 'project_type'}).target.combobox('getText');
             function_name = $(this).datagrid('getEditor', {index: index,field: 'function_name'}).target.val();
             param_style = $(this).datagrid('getEditor', {index: index,field: 'param_style'}).target.val();
         }
@@ -239,6 +245,16 @@
             <tr>
                 <th data-options="field:'ck',checkbox:true"></th>
                 <th data-options="field:'id', align: 'center', fitColumns:true">ID</th>
+                <th data-options="field:'project_type', align: 'center', editor:{
+                    type:'combobox',
+                    options:{
+                        valueField:'id',
+                        textField:'choice',
+                        data:[{id:0, choice:'UI项目'},{id:1, choice:'API项目'}, {id:3, choice:'所有项目'}],
+                        required:true,
+                        panelHeight:'auto',
+                        editable:false
+                    }}" width="80px">适用类型</th>
                 <th data-options="field:'function_name', align: 'left', editor:{type:'text', options:{required:true}}" width="200px">函数名称</th>
                 <th data-options="field:'param_style', align: 'left', editor:{type:'text', options:{required:true}}" width="300px">参数样例</th>
                 <th data-options="field:'order', align: 'center'" width='50px'>顺序</th>    

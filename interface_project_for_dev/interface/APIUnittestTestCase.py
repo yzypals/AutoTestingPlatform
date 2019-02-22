@@ -119,7 +119,7 @@ class APIUnittestTestCase(MyUnittestTestCase):
         method = self.request_method.lower()
         if method == 'post':
             logger.info('正在发起POST请求...')
-            self.input_params = json.dumps(self.input_params)  # 将参数转为json格式字符串
+            # self.input_params = json.dumps(self.input_params)  # 将参数转为json格式字符串
             self.input_params = self.input_params.encode('utf-8')
             response = self.http.post(self.url_or_sql, self.input_params)
         elif method == 'get':
