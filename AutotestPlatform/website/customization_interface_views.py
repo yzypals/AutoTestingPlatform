@@ -122,6 +122,7 @@ def get_date_and_time(request):
     curtime = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())) # 形如 2017-11-30 17:14:02
     # logger.info('当前时间curtime：%s' % curtime)
 
+    curtime_puls120s = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()+60*3))
 
     #---------------------------当前日期(本地日期)---------------------------
     current_date = date.today() # 等同于 date.fromtimestamp(time.time()).
@@ -359,6 +360,7 @@ def get_date_and_time(request):
 
     var_dic =  {
         "curtime":curtime,															    #当前时间curtime：2018-03-19 15:08:15
+        "curtime_puls120s":curtime_puls120s,                                         #当前时间+120秒：2018-03-19 15:11:15
         "today_yyyy_mm_dd":today_yyyy_mm_dd,										    #当前日期today_yyyy_mm_dd：2018-03-19
         "today_yyyymmdd":today_yyyymmdd,											    #当前日期today_yyyymmdd：20180319
         "yesterday_yyyy_mm_dd":yesterday_yyyy_mm_dd,								    #昨日yesterday_yyyy_mm_dd：2018-03-18

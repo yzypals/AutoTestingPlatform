@@ -54,12 +54,12 @@ class TestCaseStep:
     # 该函数用于替换动态变量（ 前端控制，参数名不能带空格
     def replace_variable(self, src_string):
         try:
-            variable_list = re.findall('\$.+?\$', src_string)
+            variable_list = re.findall('\${.+?}', src_string)
             logger.info('检查到目标内容中待替换的动态变量有:%s' % variable_list)
             logger.info('已保存的全局变量有：%s' % global_variable_dic)
             for item in variable_list:
                 logger.info('正在替换动态变量：%s' % item)
-                variable = str(item.strip('$').strip())
+                variable = str(item.strip('${').strip('}').strip())
                 if type(global_variable_dic[variable]) == type(1):
                     src_string = src_string.replace(item, str(global_variable_dic[variable]))
                 else:
