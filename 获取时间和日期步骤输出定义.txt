@@ -6,6 +6,7 @@ GET /action/getDateAndTime
 "dic":
 	{
 	"curtime":{"curtime":"value"},
+	"curtime_puls120s":{"curtime_puls120s":"value"},
 	"today_yyyy_mm_dd":{"today_yyyy_mm_dd":"value"},
 	"today_yyyymmdd":{"today_yyyymmdd":"value"},
 	"yesterday_yyyy_mm_dd":{"yesterday_yyyy_mm_dd":"value"},	
@@ -64,6 +65,7 @@ GET /action/getDateAndTime
 含义说明：
 {
         "curtime":curtime,															    #当前时间curtime：2018-03-19 15:08:15
+		"curtime_puls120s":curtime_puls120s,                                            #当前时间+120：2018-03-19 15:08:15
         "today_yyyy_mm_dd":today_yyyy_mm_dd,										    #当前日期today_yyyy_mm_dd：2018-03-19
         "today_yyyymmdd":today_yyyymmdd,											    #当前日期today_yyyymmdd：20180319
         "yesterday_yyyy_mm_dd":yesterday_yyyy_mm_dd,								    #昨日yesterday_yyyy_mm_dd：2018-03-18
