@@ -4,13 +4,18 @@ from django.shortcuts import render
 from django.http import HttpResponse
 from django.template import loader
 
+import re
 import json
 import logging
 from django.core.paginator import  Paginator, PageNotAnInteger, EmptyPage
 from django.db.models import Max
+# from django.db.models import Q
 from django.db import transaction
 
+
 from website.models import Global_variable_setting
+from website.models import API_test_case_step
+from website.models import API_case_tree
 
 logger = logging.getLogger('mylogger')
 
@@ -132,15 +137,50 @@ def edit_global_var_setting(request):
             return HttpResponse('所属环境不能为空')
 
         obj = Global_variable_setting.objects.get(id=id)
-        obj.name = name[:7].lower() + name[7:]
-
+        var_name = name[:7].lower() + name[7:]
+        obj.name, old_var_name = var_name, obj.name
         obj.value = value
         obj.project_type = project_type
         obj.project_name = project_name
         obj.environment = environment
+        old_project_id = obj.project_id
         if project_id != '-1':
             obj.project_id = project_id
-        obj.save()
-        return  HttpResponse('success')
+
+        try:
+            sql_for_cases_query = 'SELECT id FROM website_api_case_tree WHERE project_id = %s AND id not in (SELECT parent_id FROM website_api_case_tree WHERE  project_id = %s)' % (old_project_id, old_project_id)
+            all_cases_for_project = API_case_tree.objects.raw(sql_for_cases_query)
+            new_var = '${%s}' % obj.name
+            pattern = '\$\{\s*%s\s*}' % old_var_name
+
+            with transaction.atomic():
+                # 更改步骤引用的全局变量名称
+                for case in all_cases_for_project:
+                    case_steps = API_test_case_step.objects.filter(case_id=case.id)
+                    for case_step in case_steps:
+                        result1 = set(re.findall(pattern, case_step.request_header))
+                        result2 = set(re.findall(pattern, case_step.url_or_sql))
+                        result3 = set(re.findall(pattern, case_step.input_params))
+                        result4 = set(re.findall(pattern, case_step.check_pattern))
+                        result5 = set(re.findall(pattern, case_step.host))
+
+                        for item in result1:
+                            case_step.request_header = case_step.request_header.replace(item, new_var)
+                        for item in result2:
+                            case_step.url_or_sql = case_step.url_or_sql.replace(item, new_var)
+                        for item in result3:
+                            case_step.input_params = case_step.input_params.replace(item, new_var)
+                        for item in result4:
+                            case_step.check_pattern = case_step.check_pattern.replace(item, new_var)
+                        for item in result5:
+                            case_step.host = case_step.host.replace(item, new_var)
+                        case_step.save()
+                # 保存变量信息
+                obj.save()
+            return HttpResponse('success')
+        except Exception as e:
+            logger.error('%s' % e)
+            return HttpResponse('%s' % e)
+
     except Exception as e:
         return HttpResponse('%s' % e)

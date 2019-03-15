@@ -92,7 +92,7 @@ class TestCase:
                             result = test_case_step.run(debug)
 
                             retry = 0
-                            while not result[0] and retry <= try_for_failure:
+                            while not result[0] and retry < try_for_failure:
                                 retry += 1
                                 logger.error('步骤[第 %s 步, 步骤ID: %s]运行失败, 正在进行第 %s 次重试' % (order, step_id, str(retry)))
                                 result = test_case_step.run(debug)
