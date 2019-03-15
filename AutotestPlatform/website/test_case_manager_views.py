@@ -551,7 +551,7 @@ def add_api_case_step(request):
 
 
         # 检查输出中的定义变了变量命名是否合法
-        variable_list = re.findall('\$(.+?)\$', output_params)
+        variable_list = re.findall('\$\{\s*[^_]+[^_][\w]+}?', output_params)
         for variable in variable_list:
             variable = variable.strip().lower()
             if re.findall('[\s|-]', variable):
@@ -718,7 +718,7 @@ def update_api_case_step(request):
             try_for_failure = '0'
 
         # 检查输出中的定义变了变量命名是否合法
-        variable_list = re.findall('\$(.+?)\$', output_params)
+        variable_list = re.findall('\${\s*[^__|_].+?}', output_params)
         for variable in variable_list:
             variable = variable.strip().lower()
             if re.findall('[\s|-]', variable):
