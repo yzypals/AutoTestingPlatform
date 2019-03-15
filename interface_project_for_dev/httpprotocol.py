@@ -8,6 +8,8 @@ import http.cookiejar
 import urllib.parse
 import ssl
 import configparser
+import gzip
+from io import BytesIO
 
 from common.log import logger
 
@@ -43,6 +45,7 @@ class MyHttp:
         self.port = port
         self.headers = headers  # http 头
         self.request_param = ''
+        self.data_length = 30000
 
     def set_host(self, host):
         self.host = host
@@ -83,6 +86,10 @@ class MyHttp:
         try:
             response = urllib.request.urlopen(request)
             response_body = response.read()
+            if response.info().get("Content-Encoding") ==  "gzip":
+                response_body = BytesIO(response_body)
+                gzipper = gzip.GzipFile(fileobj = response_body)
+                response_body = gzipper.read()
             response_header = response.getheaders()
             response_status_code = response.status
             response = [response_body, response_header, response_status_code]
@@ -98,12 +105,20 @@ class MyHttp:
         url = self.protocol + '://' + self.host + ':' + str(self.port)  + url
 
         logger.info('发起的请求为：POST %s' % url)
-        logger.info('请求参数为：%s' % data)
+        if len(data) <= self.data_length:
+            logger.info('请求参数为：%s' % data)
+        else:
+            logger.info('请求参数过大，只展示部分数据：%s' % data[:self.data_length])
         logger.info('请求头为：%s' % str(self.headers))
         request = urllib.request.Request(url, headers=self.headers, method='POST')
         try:
             response = urllib.request.urlopen(request, data)
             response_body = response.read()
+            if response.info().get("Content-Encoding") ==  "gzip":
+                response_body = BytesIO(response_body)
+                gzipper = gzip.GzipFile(fileobj = response_body)
+                response_body = gzipper.read()
+
             response_header = response.getheaders()
             response_status_code = response.status
             response = [response_body, response_header, response_status_code]
@@ -118,16 +133,22 @@ class MyHttp:
         url = self.protocol + '://' + self.host + ':' + str(self.port)  + url
 
         logger.info('发起的请求为：DELETE %s' % url)
-        logger.info('请求参数为：%s' % data)
+        if len(data) <= self.data_length:
+            logger.info('请求参数为：%s' % data)
+        else:
+            logger.info('请求参数过大，只展示部分数据：%s' % data[:self.data_length])
         logger.info('请求头为：%s' % str(self.headers))
         request = urllib.request.Request(url, headers=self.headers, method='DELETE')
         try:
             response = urllib.request.urlopen(request, data)
             response_body = response.read()
+            if response.info().get("Content-Encoding") ==  "gzip":
+                response_body = BytesIO(response_body)
+                gzipper = gzip.GzipFile(fileobj = response_body)
+                response_body = gzipper.read()
             response_header = response.getheaders()
             response_status_code = response.status
             response = [response_body, response_header, response_status_code]
-            exec_count = 2
         except Exception as e:
             reason = '%s' % e
             response = [None, reason]

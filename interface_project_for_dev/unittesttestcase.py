@@ -30,17 +30,21 @@ class MyUnittestTestCase(unittest.TestCase):
 
     # 断言
     def assert_result(self, response_to_check):
-        if self.check_pattern:
-            logger.info('正在替换“校验模式”中的动态参数')
-            self.check_pattern = self.case_step.replace_variable(self.check_pattern)
-            try:
-                self.check_pattern = eval(self.check_pattern)
-            except Exception as e:
-                logger.error('校验模式:\n%s \n填写错误：%s，停止断言输出' % (self.check_pattern, e))
-                self.assertEqual(1, 0, msg='fail#%s' % e)
-                return
+        if type(self.check_pattern) == type(''): # 如果是字符串，说明是第一次运行，否则说明非第一次运行，比如失败后重试，或者循环执行
+            if self.check_pattern:
+                logger.info('正在替换“校验模式”中的动态参数')
+                self.check_pattern = self.case_step.replace_variable(self.check_pattern)
 
-            self.case_step.set_check_pattern(self.check_pattern)
+                logger.info('正在替换“校验模式”中的插件函数')
+                self.check_pattern = self.case_step.replace_plugin_func(self.check_pattern)[0]
+                try:
+                    self.check_pattern = eval(self.check_pattern)
+                except Exception as e:
+                    logger.error('校验模式:\n%s \n填写错误：%s，停止断言输出' % (self.check_pattern, e))
+                    self.assertEqual(1, 0, msg='fail#%s' % e)
+                    return
+
+                self.case_step.set_check_pattern(self.check_pattern)
 
         if self.check_rule == '':
             logger.warn('没有配置校验规则，返回程序')

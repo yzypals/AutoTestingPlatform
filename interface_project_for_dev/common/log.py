@@ -9,13 +9,14 @@ from logging.handlers import TimedRotatingFileHandler
 import threading
 import configparser
 import os
+import sys
 
 
 class LogSignleton(object):
-    def __init__(self, log_config):
+    def __init__(self, log_config, log_filename):
         pass
 
-    def __new__(cls, log_config):
+    def __new__(cls, log_config, log_filename):
         mutex=threading.Lock()
         mutex.acquire() # 上锁，防止多线程下出问题
         if not hasattr(cls, 'instance'):
@@ -24,7 +25,7 @@ class LogSignleton(object):
             config.read(log_config, encoding='utf-8-sig')
             cls.instance.log_filename = config.get('LOGGING', 'log_file')
             if not cls.instance.log_filename.strip(' '):
-                cls.instance.log_filename = './logs/log.txt'
+                cls.instance.log_filename = log_filename
             elif os.path.exists(cls.instance.log_filename):
                 if os.path.isdir(cls.instance.log_filename):
                     print('日志路径不能为目录，终止程序')
@@ -69,11 +70,16 @@ class LogSignleton(object):
             rt_file_handler.setLevel(self.log_level_in_logfile)
             self.logger.addHandler(rt_file_handler)
 
-logsignleton = LogSignleton('./conf/log.conf')
+
+co_filepath = sys._getframe().f_code.co_filename
+head, tail = os.path.split(co_filepath)
+
+conf_filepath = os.path.join(head, '../conf/log.conf')
+conf_filepath = os.path.normpath(conf_filepath)
+
+log_filename = os.path.join(head, '../logs/log.txt')
+logsignleton = LogSignleton(conf_filepath, log_filename)
 logger = logsignleton.get_logger()
-
-
-
 
 
 

@@ -6,6 +6,7 @@ __author__ = 'shouke'
 import urllib.request
 import json
 import chardet
+import re
 #from html.parser import HTMLParser
 
 from collections import OrderedDict
@@ -120,6 +121,18 @@ class APIUnittestTestCase(MyUnittestTestCase):
         if method == 'post':
             logger.info('正在发起POST请求...')
             # self.input_params = json.dumps(self.input_params)  # 将参数转为json格式字符串
+
+            # 替换键或者值的单引号为双引号
+            match_list =  re.findall('["|\']\s*:\s*["|\']', self.input_params)
+            for match in match_list:
+                if match.find("'") != -1:
+                    self.input_params = self.input_params.replace(match, match.replace("'", '"'))
+
+            match_list =  re.findall('["|\']\s*}\s*,\s*["|\']', self.input_params)
+            for match in match_list:
+                if match.find("'") != -1:
+                    self.input_params = self.input_params.replace(match, match.replace("'", '"'))
+
             self.input_params = self.input_params.encode('utf-8')
             response = self.http.post(self.url_or_sql, self.input_params)
         elif method == 'get':
