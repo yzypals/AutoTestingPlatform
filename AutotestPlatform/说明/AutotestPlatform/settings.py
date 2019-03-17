@@ -25,7 +25,7 @@ SECRET_KEY = '6)-lo1dn)%u@ycvh&nw0gr640=p3i+999z27uil0#*pfdu_#ir'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['*','127.0.0.1', 'localhost']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
 
 # Application definition
@@ -134,6 +134,10 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
+
+TEMPLATE_DIRS = (
+    os.path.join(BASE_DIR,  'templates'), 
+)
 
 LOGGING = {
     'version': 1,

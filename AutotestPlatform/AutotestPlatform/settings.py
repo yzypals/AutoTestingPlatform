@@ -13,9 +13,6 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 import os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-# os.path.abspath(__file__) -> C:\Users\laiyu\PycharmProjects\AutotestPlatform\AutotestPlatform\settings.py
-# os.path.dirname(os.path.abspath(__file__)) -> C:\Users\laiyu\PycharmProjects\AutotestPlatform\AutotestPlatform
-# os.path.dirname(os.path.dirname(os.path.abspath(__file__))) -> C:\Users\laiyu\PycharmProjects\AutotestPlatform
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
@@ -136,10 +133,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'static') # C:\Users\laiyu\PycharmProjects\AutotestPlatform\static
+STATIC_ROOT = os.path.join(BASE_DIR, 'static') 
 
 TEMPLATE_DIRS = (
-    os.path.join(BASE_DIR,  'templates'), # C:\Users\laiyu\PycharmProjects\AutotestPlatform\templates
+    os.path.join(BASE_DIR,  'templates'), 
 )
 
 
