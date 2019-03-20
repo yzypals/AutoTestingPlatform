@@ -255,7 +255,7 @@
             running_plan_name = $(this).datagrid('getEditor', {index: index,field: 'running_plan_name'}).target.val();
             project_type = $(this).datagrid('getEditor', {index: index,field: 'project_type'}).target.combobox('getText');
             project_name = $(this).datagrid('getEditor', {index: index,field: 'project_name'}).target.combobox('getText');
-            plan_name = $(this).datagrid('getEditor', {index: index,field: 'plan_name'}).target.combobox('getText'); 
+            plan_name = $(this).datagrid('getEditor', {index: index,field: 'plan_name'}).target.combobox('getText');
             script_dirpath = $(this).datagrid('getEditor', {index: index, field:'script_dirpath'}).target.val();    
             python_path =  $(this).datagrid('getEditor', {index: index, field:'python_path'}).target.val();   
             valid_flag = $(this).datagrid('getEditor', {index: index,field: 'valid_flag'}).target.combobox('getText'); 
@@ -293,7 +293,7 @@
 
                 var projectNameEditor = $('#Running_plan').datagrid('getEditor', {index: editIndex, field:'project_name'});
                 projectNameEditor.target.combobox('disable');
-                
+
                 var planNameEditor = $('#Running_plan').datagrid('getEditor', {index: editIndex, field:'plan_name'});
                 planNameEditor.target.combobox("disable");
 
@@ -354,14 +354,14 @@
 
         //选择计划名称下拉列表项时触发事件
         function onSelectForPlanCombobox(row) {
-            // plan_id_list.push(row.id);                              
-        } 
+        }
 
 
         function onChangeForPlanCombobox(newValue, oldValue) {
             textChanged = true;
-            plan_id_list = oldValue;  // 注意，收起下拉列表时，会自动设置newValue为[],oldValue设置为最新的值
-            // 注意收起下拉列表时，这里oldValue可能和下拉输入框的值不一样
+            plan_id_list = oldValue;  // 注意，收起下拉列表时,因为自动调用了common.js中的onHidePanelForCombobox函数，执行了$(this).combobox('clear');函数，
+            // 这会触发一个动作： 会自动设置newValue为[],oldValue设置为最新的值
+            // 注意收起下拉列表时，这里oldValue可能和下拉输入框的值不一样，所以需要在onHidePanel中特殊处理
         }
                 
         // 本地执行运行计划

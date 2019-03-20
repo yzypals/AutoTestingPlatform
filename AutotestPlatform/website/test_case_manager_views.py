@@ -132,7 +132,7 @@ def get_pages_for_page_elements(request):
                 return temp_var
 
         page_list = []
-        pages = Page_tree.objects.filter(project_id=project_id).all()
+        pages = Page_tree.objects.filter(project_id=project_id).exclude(parent_id = 0).all()
         for page in pages:
             temp_dic = {}
             temp_dic['id'] = str(page.id) # 改成字符串前端才可以正确展示
@@ -255,7 +255,7 @@ def get_cases_for_page_selected(request):
         return HttpResponse(response)
 
 
-# 用例步骤中选择“对象类型”为数据库时、“步骤类型”选择 执行数据库，请求获取数据库名称
+# 用例步骤中选择“对象类型”为数据库时、“步骤类型”选择 操作数据库，请求获取数据库名称
 def get_dbs_for_db_obj_type(request):
     db_list = []
     try:
@@ -264,12 +264,42 @@ def get_dbs_for_db_obj_type(request):
         project_type = params['projectType']
         if project_type == 'APIProject':
             project_info = API_project_setting.objects.filter(id=project_id).values()
-            project_type = 'API项目'
+            project_id = 'API%s' % str(project_id)
         elif project_type == 'UIProject':
             project_info = UI_project_setting.objects.filter(id=project_id).values()
-            project_type = 'UI项目'
+            project_id = 'UI%s' % str(project_id)
         project_env = project_info[0]['environment']
-        dbs = Database_setting.objects.filter(project_type=project_type).filter(project_id=project_id).filter(environment=project_env).values()
+        dbs = Database_setting.objects.exclude(db_type='Redis').filter(environment=project_env).filter(project_id__contains=project_id).values()
+        for db in dbs:
+            temp_dic = {}
+            temp_dic['id'] = str(db['id'])
+            temp_dic['choice'] = db['db_alias']
+            db_list.append(temp_dic)
+        response = {'result':'success', 'choices':db_list}
+        response = json.dumps(response)
+        return HttpResponse(response)
+    except Exception as e:
+        logger.error('%s' % e)
+        response = {'result':'error', 'choices':'%s' % e}
+        response = json.dumps(response)
+        return HttpResponse(response)
+
+
+# 用例步骤中选择“对象类型”为Redis、“步骤类型”选择 操作Redis,请求获取redis名称
+def get_rediss_obj(request):
+    db_list = []
+    try:
+        params = request.GET
+        project_id = params['projectID']
+        project_type = params['projectType']
+        if project_type == 'APIProject':
+            project_info = API_project_setting.objects.filter(id=project_id).values()
+            project_id = 'API%s' % str(project_id)
+        elif project_type == 'UIProject':
+            project_info = UI_project_setting.objects.filter(id=project_id).values()
+            project_id = 'UI%s' % str(project_id)
+        project_env = project_info[0]['environment']
+        dbs = Database_setting.objects.filter(db_type='Redis').filter(environment=project_env).filter(project_id__contains=project_id).values()
         for db in dbs:
             temp_dic = {}
             temp_dic['id'] = str(db['id'])
@@ -315,7 +345,7 @@ def get_funtions_for_func_type(request):
 
 # 用例步骤中选择不同的“对象类型”时，请求对象可被执行的操作
 def get_operations_for_object_type(request):
-    object_type = request.GET.get('objectType') # 获取对象类型 页面元素 | 数据库 | 系统函数
+    object_type = request.GET.get('objectType') # 获取对象类型 页面元素 | 数据库 | 系统函数 | Redis
     opertion_list = []
     try:
         operations = Operation_for_object.objects.filter(object_type=object_type).values()
@@ -495,7 +525,7 @@ def add_api_case_step(request):
         request_header = params['request_header'].strip()
         request_method = params['request_method']
         url_or_sql = params['url_or_sql'].strip()
-        if not url_or_sql.startswith('/') and step_type not in ('操作数据库', '执行用例',  '执行函数'):
+        if not url_or_sql.startswith('/') and step_type not in ('操作数据库', '执行用例',  '执行函数', '操作Redis'):
             url_or_sql = '/' + url_or_sql
         input_params = params['input_params'].strip().replace('\'', '\"')
         if input_params.startswith('<xmp>'):
@@ -666,7 +696,7 @@ def update_api_case_step(request):
         request_header = params['request_header'].strip()
         request_method = params['request_method']
         url_or_sql = params['url_or_sql'].strip().replace('\'', '\"')
-        if not url_or_sql.startswith('/') and step_type not in ('操作数据库', '执行用例', '执行函数'):
+        if not url_or_sql.startswith('/') and step_type not in ('操作数据库', '执行用例', '执行函数', '操作Redis'):
             url_or_sql = '/' + url_or_sql
         input_params = params['input_params'].strip().replace('\'', '\"')
         if input_params.startswith('<xmp>'):

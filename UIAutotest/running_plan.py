@@ -30,8 +30,8 @@ class RunningPlan:
                 if valid_flag  == '启用':
                     logger.info('正在查询与项目关联的数据库信息')
                     result = test_platform_db.select_many_record("SELECT db_type, db_alias, db_name, db_host, db_port, db_user, db_passwd "
-                                                                 "FROM `website_database_setting`"
-                                                                 "WHERE project_id = %s AND project_type='UI项目' AND environment= %s", (self.project_id, environment))
+                                                                 "FROM `website_database_setting` "
+                                                                 "WHERE  locate('UI%s', project_id) != 0  AND environment= '%s'" % (self.project_id, environment))
                     if result[0] and result[1]:
                         for record in result[1]:
                             db_type, db_alias, db_name, db_host, db_port, db_user, db_passwd = record

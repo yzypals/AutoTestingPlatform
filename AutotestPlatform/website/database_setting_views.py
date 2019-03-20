@@ -46,7 +46,8 @@ def get_database_settings(request):
 
     objs = page.object_list
     for obj in objs:
-        obj['db_passwd'] = '**************'
+        if obj['db_passwd']:
+            obj['db_passwd'] = '**************'
         rows.append(obj)
     griddata["rows"] =  rows
     griddata = json.dumps(griddata)
@@ -70,7 +71,6 @@ def add_database_setting(request):
         environment = params['environment']
         order = params['order']
 
-
         if not db_type:
             return HttpResponse('数据库类型不能为空')
         if not db_alias:
@@ -85,12 +85,13 @@ def add_database_setting(request):
             return HttpResponse('端口号不能为空')
         elif not db_port.isdigit():
             return  HttpResponse('端口号只能为数字')
-        elif Database_setting.objects.filter(db_host=db_host).filter(db_port=db_port).filter(db_user=db_user).exists():
-            return HttpResponse('端口号(%s)已存在' % db_port)
+        # elif Database_setting.objects.filter(db_host=db_host).filter(db_port=db_port).filter(db_user=db_user).exists():
+        #     return HttpResponse('端口号(%s)已存在' % db_port)
         if not db_user:
             return HttpResponse('用户名不能为空')
-        if not db_passwd:
+        if db_type != 'Redis' and  not db_passwd:
             return HttpResponse('密码不能为空')
+
         if not project_type:
             return HttpResponse('项目类型不能为空')
         if not project_name:
@@ -152,20 +153,20 @@ def edit_database_setting(request):
             return HttpResponse('数据库别名不能为空')
         elif Database_setting.objects.filter(db_alias=db_alias).exclude(id =id).exists():
             return HttpResponse('数据库别名已存在')
-        if not db_name:
+        if db_type != 'Redis' and db_name.strip() == '':
             return HttpResponse('数据库名称不能为空')
+        elif db_type == 'Redis' and db_name.strip() == '':
+            db_name = '0'
         if not db_host:
             return HttpResponse('主机地址不能为空')
         if not db_port:
             return HttpResponse('端口号不能为空')
         elif not db_port.isdigit():
             return  HttpResponse('端口号只能为数字')
-        elif Database_setting.objects.filter(db_host=db_host).filter(db_port=db_port).exclude(id =id).exists():
-            # logger.error('error, 端口号(%s)已存在' % db_port)
-            return HttpResponse('端口号(%s)已存在' % db_port)
-        if not db_user:
+
+        if db_type != 'Redis' and db_user.strip() == '':
             return HttpResponse('用户名不能为空')
-        if not db_passwd:
+        if db_type != 'Redis' and  not db_passwd:
             return HttpResponse('密码不能为空')
         if not project_type:
             return HttpResponse('项目类型不能为空')
@@ -186,7 +187,8 @@ def edit_database_setting(request):
         obj.project_type = project_type
         obj.project_name = project_name
         obj.environment = environment
-        if project_id != '-1':
+
+        if project_id:
             obj.project_id = project_id
         obj.save()
 

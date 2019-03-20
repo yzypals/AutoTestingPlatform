@@ -18,6 +18,7 @@ from httpprotocol import MyHttp
 from interface.APIUnittestTestCase import *
 from database.DBUnittestTestCase import *
 from function.FuncUnittestTestCase import *
+from myredis.RedisUnittestTestCase import *
 from function.plugin import pluginfunc
 
 
@@ -56,7 +57,8 @@ class TestCaseStep:
     # 该函数用于替换动态变量（ 后台控制，参数名不能带空格
     def replace_variable(self, src_string):
         try:
-            variable_list = re.findall('\${\s*[^_]+[^_][\w]+}?', src_string)
+            variable_list = re.findall('\${(.+?)}', src_string, re.DOTALL)
+            variable_list = ['${%s}' % item for item in variable_list if not item.strip().startswith('_')]
             logger.info('检查到目标内容中待替换的动态变量有:%s' % variable_list)
             logger.info('已保存的全局变量有：%s' % global_variable_dic)
             for item in variable_list:
@@ -180,6 +182,10 @@ class TestCaseStep:
             elif self.step_type == '执行函数':
                 class_name = 'FuncUnittestTestCase'
                 exec_operation = self.func_map.get(self.op_object)
+                request_headers = ''
+            elif self.step_type == '操作Redis':
+                class_name = 'RedisUnittestTestCase'
+                exec_operation = 'test_' + self.exec_operation
                 request_headers = ''
 
             input_params = self.input_params

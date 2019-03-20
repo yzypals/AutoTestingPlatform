@@ -94,6 +94,7 @@ insert into `website_operation_for_object` (`id`, `object_type`, `operation`, `o
 insert into `website_operation_for_object` (`id`, `object_type`, `operation`, `order`) values('9','页面元素','点击','9');
 insert into `website_operation_for_object` (`id`, `object_type`, `operation`, `order`) values('10','页面元素','鼠标移动到','10');
 insert into `website_operation_for_object` (`id`, `object_type`, `operation`, `order`) values('11','页面元素','拖动滚动条至元素可见','11');
+insert into `website_operation_for_object` (`id`, `object_type`, `operation`, `order`) values('12','Redis','set_key_value','12');
 
 # 创建索引
 CREATE INDEX test_task_detail_page_id ON website_test_task_detail(page_id);

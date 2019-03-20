@@ -161,6 +161,8 @@ urlpatterns = [
 
     url(r'^action/addAPICaseStep', test_case_manager_views.add_api_case_step, name='add_api_case_step'),
     url(r'^action/updateAPICaseStep', test_case_manager_views.update_api_case_step, name='update_api_case_step'),
+    url(r'^action/getRedis', test_case_manager_views.get_rediss_obj, name='get_rediss_obj'),
+
 
      # UI测试计划管理
     url(r'^pages/UITestPlanManager', test_plan_manager_views.ui_test_plan_manager, name='ui_test_plan_manager'),

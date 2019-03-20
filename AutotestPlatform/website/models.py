@@ -163,7 +163,7 @@ class Database_setting(models.Model):
     environment = models.CharField(max_length=20)   # 所属环境
     project_type = models.CharField(max_length=10)  # 项目类型 API项目，UI项目
     project_name = models.CharField(max_length=50)  # 项目名称
-    project_id = models.IntegerField()              # 关联项目ID
+    project_id =  models.CharField(max_length=300)  # 关联项目ID
     order = models.IntegerField()                   # 顺序
 
 

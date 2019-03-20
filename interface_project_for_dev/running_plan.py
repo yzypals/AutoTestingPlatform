@@ -10,7 +10,9 @@ from common.log import logger
 from common.globalvar import test_platform_db
 from common.globalvar import global_variable_dic
 from common.globalvar import db_related_to_project_dic
+from common.globalvar import redis_related_to_project_dic
 from common.mydb import MyDB
+from common.redis_client import RedisClient
 from test_project import TestProject
 
 
@@ -34,14 +36,21 @@ class RunningPlan:
                 if valid_flag  == '启用':
                     logger.info('正在查询与项目关联的数据库信息')
                     result = test_platform_db.select_many_record("SELECT db_type, db_alias, db_name, db_host, db_port, db_user, db_passwd "
-                                                                 "FROM `website_database_setting`"
-                                                                 "WHERE project_id = %s AND project_type='API项目' AND environment= %s", (self.project_id, environment))
+                                                                 "FROM `website_database_setting` "
+                                                                 "WHERE  locate('API%s', project_id) != 0 AND environment= '%s'" %  (self.project_id, environment))
                     if result[0] and result[1]:
                         for record in result[1]:
                             db_type, db_alias, db_name, db_host, db_port, db_user, db_passwd = record
                             if db_type == 'MySQL':
                                 mydb = MyDB(db_name=db_name, db_host=db_host, port=db_port, user=db_user, password=db_passwd, charset='utf8')
                                 db_related_to_project_dic[db_alias] = mydb
+                            elif db_type == 'Redis':
+                                if not db_passwd.strip():
+                                    db_passwd = None
+                                if db_name.strip() == '':
+                                    db_name = '0'
+                                myredis = RedisClient(host=db_host, port=db_port, password=db_passwd, db=db_name, charset='utf-8')
+                                redis_related_to_project_dic[db_alias] = myredis
                     elif not result[0]:
                         logger.error('查询项目相关的数据库配置信息出错：%s' % result[1])
                         return [False, '执行失败', result[1]]

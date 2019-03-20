@@ -625,6 +625,70 @@
 
                 // 禁用端口
                 portEditor.target.attr('disabled', true);
+            }else if (stepType == '操作Redis') {
+                // 请求操作对象（Redis对象
+                $.get('/action/getRedis?projectID=' + projectID + '&projectType=APIProject', function(data,status) {
+                    var jsonData = JSON.parse(data);
+                    if (jsonData['result'] == 'success') {
+                        opObjectEditor.target.combobox('loadData', jsonData['choices']);
+                    } else {
+                        $.messager.alert('错误信息', '获取数据库操作对象出错:' + jsonData['choices'], 'error');
+                    }
+                });
+
+                // 请求对象可执行操作
+                $.get('/action/getOperationsForObjectType?objectType=Redis', function(data,status) {
+                    var jsonData = JSON.parse(data);
+                    if (jsonData['result'] == 'success') {
+                        operationEditor.target.combobox('loadData', jsonData['choices']);
+                    } else {
+                        $.messager.alert('错误信息', '获取可执行操作出错：' + jsonData['choices'], 'error');
+                    }
+                });
+
+                // 禁用 请求头  附：只读设置 attr('readonly', true);
+                requestHeaderEditor.target.attr('disabled', true);
+
+                // 获取请求方法
+                requestMothodEditor.target.combobox('loadData', [{'id':0, 'choice':'--'}]);
+
+                // 禁用URL、Sql输入
+                urlOrSqlEditor.target.attr('disabled', true);
+
+                // 启用 输入参数
+                inputParamsEditor.target.attr('disabled', false);
+
+                // 启用 输出参数
+                outputParamsEditor.target.attr('disabled', false);
+
+                // 获取“检查响应”
+                checkResponseEditor.target.combobox('loadData', [{'id':0, 'choice':'body'}]);
+
+                // 启用校验规则
+                checkRuleEditor.target.combobox('enable');
+
+                // 启用用校验模式
+                checkPatternEditor.target.attr('disabled', false);
+
+                // 请求校验规则
+                $.get('/action/getAssertionsForObjectType?opType=Redis', function(data,status) {
+                    var jsonData = JSON.parse(data);
+                    if (jsonData['result'] == 'success') {
+                        checkRuleEditor.target.combobox('loadData', jsonData['choices']);
+                    } else {
+                        $.messager.alert('错误信息', '获取可用校验规则出错: ' + jsonData['choices'], 'error');
+                    }
+                });
+
+                // 禁用 协议
+                protocolEditor.target.attr('disabled', true);
+
+                // 禁用主机
+                hostEditor.target.attr('disabled', true);
+
+                // 禁用端口
+                portEditor.target.attr('disabled', true);
+
             } else if (stepType == '执行用例') {
                 // 请求操作对象（测试用例
                 $.get('/action/getCasesForProject?projectType=API&projectID=' + projectID +'&caseID=' + caseID, function(data,status) {
@@ -928,7 +992,7 @@
                         options:{
                             valueField:'id',
                             textField:'choice',
-                            data:[{id:1, choice:'请求接口'},{id:2, choice:'操作数据库'}, {id:3, choice:'执行用例'}, {id:4, choice:'执行函数'}],
+                            data:[{id:1, choice:'请求接口'},{id:2, choice:'操作数据库'}, {id:3, choice:'操作Redis'}, {id:4, choice:'执行用例'}, {id:5, choice:'执行函数'}],
                             required:true,
                             editable:false,
                             width:'500px',
@@ -974,7 +1038,7 @@
                             panelHeight:'auto'
                         }
                     }" width="65px">请求方法</th>
-                <th data-options="field:'url_or_sql', align: 'left', editor:{type:'textarea'}" width="350px">URL/SQL</th>    
+                <th data-options="field:'url_or_sql', align: 'left', editor:{type:'textarea'}" width="350px">URL/SQL/COMMAND</th>
                 <th data-options="field:'input_params', align: 'left', editor:{type:'textarea'}, styler:setCellStyle" width="400px">输入参数</th>
                 <th data-options="field:'response_to_check', align: 'center',
                     editor:{

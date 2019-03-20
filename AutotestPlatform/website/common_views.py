@@ -7,6 +7,7 @@ from django.db import transaction
 from django.db.models import Max
 from django.db.models import Min
 from django.db.models import F
+from django.core import serializers
 
 from website.models import Sprint_tree
 from website.models import Project_chosen
@@ -96,24 +97,47 @@ def store_project_chosen(request):
     finally:
         return HttpResponse(response)
 
-# 根据项目类型(测试项目|UI自动化项目|接口自动化项目)，获取对应的项目
+# 根据项目类型(测试项目|UI自动化项目|接口自动化项目|所有项目)，获取对应的项目
 def get_projects(request):
     project_list = []
     params = request.GET
     project_type = params['projectType']
     if project_type == 'TestProject':
+        type = 'TEST'
         db_class = Test_project_setting
     elif project_type == 'UIProject':
+        type = 'UI'
         db_class = UI_project_setting
     elif project_type == 'APIProject':
+        type = 'API'
         db_class = API_project_setting
     try:
-        rows = db_class.objects.filter(valid_flag='启用').order_by('-order').values()
-        for row in rows:
-            temp_dic = {}
-            temp_dic['id'] = str(row['id'])
-            temp_dic['choice'] = row['project_name']
-            project_list.append(temp_dic)
+        if project_type != 'ALLProject':
+            rows = db_class.objects.filter(valid_flag='启用').order_by('-order').values()
+
+            for row in rows:
+                temp_dic = {}
+                temp_dic['id'] = str(row['id'])
+                temp_dic['id2'] = '%s%s' % (type, str(row['id'])) # 给数据库设置使用
+                temp_dic['choice'] = row['project_name']
+                project_list.append(temp_dic)
+        else:
+            rows = API_project_setting.objects.filter(valid_flag='启用').order_by('-order').values()
+            for row in rows:
+                temp_dic = {}
+                temp_dic['id'] = str(row['id'])
+                temp_dic['id2'] = 'API' + str(row['id']) # 给数据库设置使用
+                temp_dic['choice'] = row['project_name']
+                project_list.append(temp_dic)
+
+            rows = UI_project_setting.objects.filter(valid_flag='启用').order_by('-order').values()
+            for row in rows:
+                temp_dic = {}
+                temp_dic['id'] = str(row['id'])
+                temp_dic['id2'] = 'UI' + str(row['id']) # 给数据库设置使用
+                temp_dic['choice'] = row['project_name']
+                project_list.append(temp_dic)
+
         response = {'result':'success', 'data':project_list}
     except Exception as e:
         logger.error('%s' % e)
