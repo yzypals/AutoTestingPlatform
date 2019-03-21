@@ -33,7 +33,7 @@ function storeProjectChosen(treeType, projectID, projectName){
     return defer;
 }
 
-// 根据项目类型(测试项目|UI自动化项目|接口自动化项目)，获取对应的项目
+// 根据项目类型(测试项目|UI自动化项目|接口自动化项目|所有项目)，获取对应的项目
 function getProjects(projectType) {
 	var defer = $.Deferred();
     // 请求已有已启用项目
