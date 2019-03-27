@@ -11,9 +11,9 @@ https://gitee.com/ishouke/AutoTestingPlatform/wikis/%E5%9F%BA%E4%BA%8Epython-Dja
 
 #参考文档：
 
-基于python+Djano+Easyui实现的接口自动化测试框架V1.0.pdf，
+基于python+Djano+Easyui实现的接口自动化测试框架
 
-基于python+Djano+Easyui实现的UI自动化测试框架V1.0.pdf
+基于python+Djano+Easyui实现的UI自动化测试框架
 
 #### 参与贡献
 
