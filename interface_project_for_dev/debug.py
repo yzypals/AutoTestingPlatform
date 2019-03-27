@@ -33,7 +33,7 @@ class Debug:
                 logger.info('正在查询与项目关联的数据库信息')
                 result = test_platform_db.select_many_record("SELECT db_type, db_alias, db_name, db_host, db_port, db_user, db_passwd "
                                                              "FROM `website_database_setting` "
-                                                             "WHERE  locate('API%s', project_id) != 0 AND environment= '%s'" %  (project_id, environment_id))
+                                                             "WHERE  locate('API%s', project_id) != 0 AND environment_id= '%s'" %  (project_id, environment_id))
                 if result[0] and result[1]:
                     for record in result[1]:
                         db_type, db_alias, db_name, db_host, db_port, db_user, db_passwd = record
