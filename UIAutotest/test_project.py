@@ -8,11 +8,10 @@ from common.globalvar import test_platform_db
 from test_plan import TestPlan
 
 class TestProject:
-    def __init__(self, project_id, project_name, home_page, environment, plan_id_list):
+    def __init__(self, project_id, project_name, home_page, plan_id_list):
         self.project_id = project_id
         self.project_name = project_name
         self.home_page = home_page
-        self.environment = environment
         self.plan_id_list = plan_id_list
 
     #同步更新与待运行测试计划关联的所有用例树节点信息

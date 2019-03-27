@@ -58,18 +58,23 @@ def get_global_var_settings(request):
 def add_global_var_setting(request):
     try:
         params = request.POST
-
         name = params['name'].strip().replace(' ', '').replace('\t', '').replace('-', '')
         value = params['value']
         project_type = params['project_type']
         project_name = params['project_name']
         project_id = params['project_id']
         environment = params['environment']
+        env_id = params['env_id']
         order = params['order']
         if name == '':
             return HttpResponse('变量名不能为空')
-        elif Global_variable_setting.objects.filter(project_id=project_id).filter(name=name).exists():
-            return HttpResponse('变量名已存在')
+        else:
+            project_id_list1 = project_id.split(',')
+            rows = Global_variable_setting.objects.filter(project_type=project_type).filter(name=name).values('project_id')
+            project_id_list2 = [row['project_id'] for row in rows]
+            project_id_list = set(project_id_list2) & set(project_id_list1)
+            if project_id_list:
+                return HttpResponse('已有%s项目使用该变量名，项目ID：%s' % (project_type,project_id_list))
         if value == '':
             return HttpResponse('变量值不能为空')
         if not project_type:
@@ -87,7 +92,7 @@ def add_global_var_setting(request):
             else:
                 order = 1
             name = name[:7].lower() + name[7:]
-            obj = Global_variable_setting(name=name , value=value, project_type=project_type, project_name=project_name, environment=environment, order=order, project_id=project_id)
+            obj = Global_variable_setting(name=name , value=value, project_type=project_type, project_name=project_name, environment=environment, env_id=env_id, order=order, project_id=project_id)
             obj.save()
         else: #表明是插入
             # logger.info('即将插入新记录，正在调整记录的顺序') # 插入记录所在行上方的记录都+1
@@ -98,7 +103,7 @@ def add_global_var_setting(request):
                         item.order = item.order + 1
                         item.save()
 
-                    obj = Global_variable_setting(name=name, value=value, project_type=project_type, project_name=project_name, environment=environment, order=order, project_id=project_id)
+                    obj = Global_variable_setting(name=name, value=value, project_type=project_type, project_name=project_name, environment=environment, env_id=env_id, order=order, project_id=project_id)
                     obj.save()
             except Exception as e:
                 reason = '%s' % e
@@ -121,12 +126,18 @@ def edit_global_var_setting(request):
         project_type = params['project_type']
         project_name = params['project_name']
         project_id = params['project_id']
+        env_id = params['env_id']
         environment = params['environment']
 
         if name == '':
             return HttpResponse('变量名不能为空')
-        elif Global_variable_setting.objects.filter(project_id=project_id).filter(name=name).exists():
-            return HttpResponse('变量名已存在')
+        else:
+            project_id_list1 = project_id.split(',')
+            rows = Global_variable_setting.objects.filter(project_type=project_type).exclude(id=id).filter(name=name).values('project_id')
+            project_id_list2 = [row['project_id'] for row in rows]
+            project_id_list = set(project_id_list2) & set(project_id_list1)
+            if project_id_list:
+                return HttpResponse('已有%s项目使用该变量名，项目ID：%s' % (project_type,project_id_list))
         if value == '':
             return HttpResponse('变量值不能为空')
         if not project_type:
@@ -142,19 +153,19 @@ def edit_global_var_setting(request):
         obj.value = value
         obj.project_type = project_type
         obj.project_name = project_name
-        obj.environment = environment
         old_project_id = obj.project_id
-        if project_id != '-1':
-            obj.project_id = project_id
+        obj.project_id = project_id
+        obj.environment = environment
+        obj.env_id = env_id
 
         try:
-            sql_for_cases_query = 'SELECT id FROM website_api_case_tree WHERE project_id = %s AND id not in (SELECT parent_id FROM website_api_case_tree WHERE  project_id = %s)' % (old_project_id, old_project_id)
+            # # 更改步骤引用的全局变量名称(目前只对API项目
+            sql_for_cases_query = 'SELECT id FROM website_api_case_tree WHERE project_id in (%s) AND id not in (SELECT parent_id FROM website_api_case_tree WHERE project_id in (%s))' % (old_project_id, old_project_id)
             all_cases_for_project = API_case_tree.objects.raw(sql_for_cases_query)
             new_var = '${%s}' % obj.name
             pattern = '\$\{\s*%s\s*}' % old_var_name
 
             with transaction.atomic():
-                # 更改步骤引用的全局变量名称
                 for case in all_cases_for_project:
                     case_steps = API_test_case_step.objects.filter(case_id=case.id)
                     for case_step in case_steps:
@@ -181,6 +192,5 @@ def edit_global_var_setting(request):
         except Exception as e:
             logger.error('%s' % e)
             return HttpResponse('%s' % e)
-
     except Exception as e:
         return HttpResponse('%s' % e)

@@ -56,3 +56,4 @@ def __base64encode(args_list):
     except Exception as e:
         logger.error('base64编码失败：%s' % e)
         return  None
+

@@ -153,6 +153,7 @@ def add_ui_test_plan(request):
         plan_name = params['plan_name']
         plan_desc = params['plan_desc']
         browsers = params['browsers']
+        browser_id = params['browser_id']
         valid_flag = params['valid_flag']
         order = params['order']
 
@@ -187,7 +188,7 @@ def add_ui_test_plan(request):
                         item.save()
 
                     obj = UI_test_plan(project_id=project_id, project_name=project_name, plan_name=plan_name, plan_desc=plan_desc,
-                                            browsers=browsers, valid_flag=valid_flag, order=order)
+                                            browsers=browsers, browser_id=browser_id, valid_flag=valid_flag, order=order)
                     obj.save()
             except Exception as e:
                 logger.error('%s' % e)
@@ -257,6 +258,7 @@ def update_ui_test_plan(request):
         plan_name = params['plan_name']
         plan_desc = params['plan_desc']
         browsers = params['browsers']
+        browser_id = params['browser_id']
         valid_flag = params['valid_flag']
 
         if plan_name == '':
@@ -272,6 +274,7 @@ def update_ui_test_plan(request):
         obj.plan_name = plan_name
         obj.plan_desc = plan_desc
         obj.browsers = browsers
+        obj.browser_id = browser_id
         obj.valid_flag = valid_flag
         obj.save()
         return  HttpResponse('success')

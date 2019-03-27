@@ -44,6 +44,7 @@ class UI_project_setting(models.Model):
     project_name = models.CharField(max_length=50)      # 项目名称
     home_page = models.CharField(max_length=500)        # 项目主页
     environment = models.CharField(max_length=20)       # 所属环境
+    environment_id = models.IntegerField()              # 所属环境ID
     valid_flag = models.CharField(max_length=5)         # 是否启用标识（启用|禁用）
     order = models.IntegerField()                       # 顺序
 
@@ -55,6 +56,7 @@ class API_project_setting(models.Model):
     host = models.CharField(max_length=200)             # 主机地址
     port = models.IntegerField()                        # 端口
     environment = models.CharField(max_length=20)       # 所属环境
+    environment_id = models.IntegerField()              # 所属环境ID
     valid_flag = models.CharField(max_length=5)         # 是否启用标识（启用|禁用）
     order = models.IntegerField()                       # 顺序
 
@@ -142,6 +144,11 @@ class Promble_feedback(models.Model):
     mark = models.CharField(max_length=100)               # 备注
     order = models.IntegerField()                         # 顺序
 
+# 浏览器配置
+class Env_setting(models.Model):
+    id = models.AutoField(primary_key=True)          # ID, 主键
+    env = models.CharField(max_length=50)             # 环境
+    order = models.IntegerField()                     # 顺序
 
 # 浏览器配置
 class Browser_setting(models.Model):
@@ -161,6 +168,7 @@ class Database_setting(models.Model):
     db_user = models.CharField(max_length=20)       # 数据库用户名
     db_passwd = models.CharField(max_length=20)     # 数据库用户密码
     environment = models.CharField(max_length=20)   # 所属环境
+    environment_id = models.IntegerField()          # 所属环境ID
     project_type = models.CharField(max_length=10)  # 项目类型 API项目，UI项目
     project_name = models.CharField(max_length=50)  # 项目名称
     project_id =  models.CharField(max_length=300)  # 关联项目ID
@@ -196,10 +204,12 @@ class Global_variable_setting(models.Model):
     id = models.AutoField(primary_key=True)                # ID，主键
     name = models.CharField(max_length=50)                  # 变量名称
     value = models.CharField(max_length=3000)               # 变量值
+    remark = models.CharField(max_length=3000)              # 备注
     environment = models.CharField(max_length=20)           # 所属环境
-    project_type = models.CharField(max_length=10)          # 项目类型 API项目，UI项目
+    env_id = models.CharField(max_length=500)               #关联环境ID
+    project_type = models.CharField(max_length=10)          # 项目类型 API项目，UI项目, 所有项目
     project_name = models.CharField(max_length=50)          # 项目名称
-    project_id = models.IntegerField()                      # 关联项目ID
+    project_id = models.CharField(max_length=500)           # 关联项目ID
     order = models.IntegerField()                           # 顺序
 
 
@@ -249,10 +259,11 @@ class API_test_case_step(models.Model):
     check_pattern = models.CharField(max_length=3000)    # 校验模式
     output_params = models.TextField(max_length=6000)    # 输出
     protocol = models.CharField(max_length=10)           # 协议 http、https
-    host = models.CharField(max_length=200)               # 主机地址
+    host = models.CharField(max_length=200)              # 主机地址
     port = models.CharField(max_length=6)                # 端口
     run_times = models.IntegerField()                    # 运行次数
     try_for_failure = models.IntegerField()              # 失败重试次数
+    retry_frequency = models.IntegerField()              # 失败重试频率
     status = models.CharField(max_length=5)              # 步骤状态 启用|禁用
     case = models.ForeignKey(API_case_tree, to_field='id', on_delete=models.PROTECT) #节点ID，即用例ID
 
@@ -263,6 +274,7 @@ class UI_test_plan(models.Model):
     plan_name = models.CharField(max_length=50)        # 计划名称
     plan_desc = models.CharField(max_length=200)       # 计划描述
     browsers = models.CharField(max_length=20)         # 运行浏览器
+    browser_id = models.CharField(max_length=100)      # 浏览器id
     valid_flag = models.CharField(max_length=5)        # 是否启用(启用|禁用)
     order = models.IntegerField()                      # 顺序
     project = models.ForeignKey(UI_project_setting,to_field='id', on_delete=models.PROTECT)      # 所属项目ID
@@ -332,7 +344,7 @@ class UI_test_report_for_summary(models.Model):
     case_pass_num = models.IntegerField()                # 用例执行成功数
     case_fail_num = models.IntegerField()                # 用例执行失败数
     case_block_num = models.IntegerField()               # 用例执行阻塞数
-    remark = models.CharField(max_length=3000)                      # 备注，说明计划运行失败的原因
+    remark = models.CharField(max_length=3000)           # 备注，说明计划运行失败的原因
 
 # API自动化测试报告-测试概况
 class API_test_report_for_summary(models.Model):
@@ -349,7 +361,7 @@ class API_test_report_for_summary(models.Model):
     case_pass_num = models.IntegerField()                # 用例执行成功数
     case_fail_num = models.IntegerField()                # 用例执行失败数
     case_block_num = models.IntegerField()               # 用例执行阻塞数
-    remark = models.CharField(max_length=3000)                      # 备注，说明计划运行失败的原因
+    remark = models.CharField(max_length=3000)           # 备注，说明计划运行失败的原因
 
 # UI自动化测试报告-用例执行明细
 class UI_test_report_for_case(models.Model):

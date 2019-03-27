@@ -4,16 +4,16 @@
     <meta charset="UTF-8">
     {% load staticfiles %}
     <!--引入JQuery-->
-    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery-3.2.1.min.js' %}"></script> 
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery-3.2.1.min.js' %}"></script>
     <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery.easyui.min.js' %}"></script>
-    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery.min.js' %}"></script>      
-    <script type="text/javascript" src="{% static 'website/js/common.js' %}"></script>    
-    <script type="text/javascript" src="{% static 'website/jquery-easyui/locale/easyui-lang-zh_CN.js' %}"></script> 
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'website/js/common.js' %}"></script>
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/locale/easyui-lang-zh_CN.js' %}"></script>
     <link rel="stylesheet" type="text/css" href="{% static  'website/jquery-easyui/themes/default/easyui.css' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'website/jquery-easyui/themes/icon.css' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'website/jquery-easyui/demo/demo.css' %}">
     <script>
-     
+
         var ifInsert = undefined; // 用于标记行是否是新增还是修改
         var editIndex = undefined;     // 用于存储正在编辑行的索引
         var ID = undefined;     // 存放行自增ID
@@ -27,9 +27,10 @@
         var db_user = undefined;      // 数据库用户名
         var db_passwd = undefined;    // 数据库用户密码
         var environment = undefined;  // 所属环境
+        var environment_id = null; // 记录所属环境id
         var project_type = undefined; // 项目类型
         var project_name = undefined; // 所属项目
-        var project_id_list = undefined; // 记录所选项目的id
+        var project_id_list = [];      // 所属项目id list
         var order = undefined; // 顺序
 
         function onLoadSuccess(data) {
@@ -38,10 +39,10 @@
             $('.editRowBtn').linkbutton({text:'修改', plain:true, iconCls:'icon-edit'});
             $('.deleteRowBtn').linkbutton({text:'删除', plain:true, iconCls:'icon-remove'});
             $('.moveUpBtn').linkbutton({text:'上移', plain:true, iconCls:'icon-edit'});
-            $('.moveDownBtn').linkbutton({text:'下移', plain:true, iconCls:'icon-edit'}); 
+            $('.moveDownBtn').linkbutton({text:'下移', plain:true, iconCls:'icon-edit'});
 
             $('.saveRowBtn').hide();
-            $('.cancelEditRowBtn').hide(); 
+            $('.cancelEditRowBtn').hide();
 
             editIndex = undefined;
 
@@ -59,18 +60,18 @@
                     <a id='saveRowBtn" + index + "' class='saveRowBtn' onclick='saveRow()' \
                      href='javascript:void(0)' style='display:none'>保存</a>\
                     <a id='cancelEditRowBtn" + index + "' class='cancelEditRowBtn' onclick='cancelEditRow(this)' \
-                    href='javascript:void(0)' style='display:none'>取消</a>"; 
+                    href='javascript:void(0)' style='display:none'>取消</a>";
             return btn;
         }
 
- 
+
         // 编辑时隐藏部分按钮
         function hideNoneEditBtn(editIndex) {
             $('#insertRowBtn' + editIndex).hide();
             $('#editRowBtn' + editIndex).hide();
             $('#deleteRowBtn' + editIndex).hide();
             $('#moveUpBtn' + editIndex).hide();
-            $('#moveDownBtn' + editIndex).hide();         
+            $('#moveDownBtn' + editIndex).hide();
             $('.saveRowBtn').linkbutton({text:'保存', plain:true, iconCls:'icon-ok'});
             $('.cancelEditRowBtn').linkbutton({text:'取消', plain:true, iconCls:'icon-cancel'});
             $('#saveRowBtn' + editIndex).show();
@@ -78,77 +79,40 @@
         }
 
         // 点击表格“插入|新增”按钮事件函数实现
-        function insertRow(row, rowIndex) { 
-            if (endEditing()) { 
-               if (rowIndex == undefined) { // 点击 新增 按钮
-                    editIndex = 0; 
+        function insertRow(row, rowIndex) {
+            if (endEditing()) {
+                if (rowIndex == undefined) { // 点击 新增 按钮
+                    editIndex = 0;
                     order = '';
                 } else { // 点击 插入 按钮
                     editIndex = rowIndex + 1;
                     order = row.order
-                }     
-                                
-            
+                }
+
+
                 $('#Database_setting').datagrid('insertRow',{
-                    index: editIndex, 
+                    index: editIndex,
                     row: { }
                 });
 
                 hideNoneEditBtn(editIndex);
-            
-                $('#Database_setting').datagrid('unselectAll');      
+
+                $('#Database_setting').datagrid('unselectAll');
                 var row = $('#Database_setting').datagrid('selectRow', editIndex);
                 $(row).datagrid('beginEdit', editIndex);
 
-                $(row).datagrid('getEditor', {index: editIndex,field: 'db_type'}).target.combobox('setText', 'MySQL');
- 
-                // // 设置项目类型，默认为 UI项目
-                $(row).datagrid('getEditor', {index: editIndex, field: 'project_type'}).target.combobox('setValue', 'UI项目');
+                initDataForRowComponets('API项目', '新增');
 
-                // 设置所属环境，默认为测试环境
-                $(row).datagrid('getEditor', {index: editIndex, field: 'environment'}).target.combobox('setText', '测试环境');
-
-                // 初始化项目combobbox 下拉列表值
-                initDataForCombobox('UI项目', '新增');
                 ifInsert = true;
-            }  
-        }
-     
-        // 初始化项目 combobox的值
-        function initDataForCombobox(projectType, flag) {
-            var projectEditor =  $('#Database_setting').datagrid('getEditor', {index: editIndex, field: 'project_name'});
-            
-            // 初始化项目combobox下拉列表
-            if (projectType == 'UI项目') {
-                projectType = 'UIProject';
-            } else if(projectType == 'API项目'){
-                projectType = 'APIProject';
-            } else if(projectType == '所有项目'){
-                projectType = 'ALLProject';
-            } else {
-                return;
             }
-
-            getProjects(projectType).then(function(jsonData) { 
-                if (jsonData['result'] == 'success') {
-                    if(flag == '新增' || flag == '切换项目类型') {
-                        $(projectEditor.target).combobox('clear');
-                        $(projectEditor.target).combobox('loadData', {'id':0, 'choice':''});
-                    }
-                    $(projectEditor.target).combobox('loadData', jsonData['data']);
-                } else {
-                    $.messager.alert('错误信息', '获取项目失败：' + jsonData['data'], 'error');                 
-                }
-            });           
         }
-
 
         // 点击 保存 按钮的函数实现
         function saveRow(){
             if (editIndex == undefined) {
                 $.messager.alert('提示', '操作失败，没有正在编辑的记录', 'info');
                 return;
-            } 
+            }
             if ($('#Database_setting').datagrid('validateRow', editIndex)){
                 $('#Database_setting').datagrid('endEdit', editIndex);
                 var isValid = true;
@@ -163,35 +127,35 @@
                     isValid=false;
                 } else if (db_host == '') {
                     $.messager.alert('提示','保存失败，主机地址不能为空', 'warnging');
-                    isValid=false;  
+                    isValid=false;
                 } else if (db_port == '') {
                     $.messager.alert('提示','保存失败，端口号不能为空', 'warnging');
-                    isValid=false;   
+                    isValid=false;
                 } else if (parseInt(db_port).toString() == 'NaN') {
                     $.messager.alert('提示','保存失败，端口号只能为数字', 'warnging');
-                    isValid=false; 
+                    isValid=false;
                 } else if (db_type !='Redis' && db_user == '') {
                     $.messager.alert('提示','保存失败，用户名不能为空', 'warnging');
-                    isValid=false;  
+                    isValid=false;
                 } else if (db_type != 'Redis' && db_passwd == '') {
                     $.messager.alert('提示','保存失败，密码不能为空', 'warnging');
-                    isValid=false;   
+                    isValid=false;
                 } else if (project_name == '') {
                     $.messager.alert('提示','保存失败，所属项目不能为空', 'warnging');
-                    isValid=false;  
-                }  
+                    isValid=false;
+                }
                 if (!isValid) {
                     ifInsert = undefined;
                     editIndex = undefined;
                     onLoadSuccess();
                     $('#Database_setting').datagrid('reload');
-                    return;                    
+                    return;
                 }
 
                 project_id_list = project_id_list.toString();
                 if (ifInsert == true) { // 新增
                     var url = '/action/addDatabaseSetting';
-                    var params = { 
+                    var params = {
                         db_type:db_type,
                         db_alias:db_alias,
                         db_name:db_name,
@@ -200,6 +164,7 @@
                         db_user:db_user,
                         db_passwd:db_passwd,
                         environment:environment,
+                        environment_id:environment_id,
                         project_type:project_type,
                         project_name:project_name,
                         project_id:project_id_list,
@@ -217,29 +182,30 @@
                         db_user:db_user,
                         db_passwd:db_passwd,
                         environment:environment,
+                        environment_id:environment_id,
                         project_type:project_type,
-                        project_name:project_name,                       
+                        project_name:project_name,
                         project_id:project_id_list
                     };
                 }
 
                 $.post(url, params, function(data,status){
-                        if (data == 'success') {
-                            $.messager.alert('提示','保存成功', 'info');
-                        } else {
-                            $.messager.alert('错误', '保存失败: ' + data, 'error');
+                            if (data == 'success') {
+                                $.messager.alert('提示','保存成功', 'info');
+                            } else {
+                                $.messager.alert('错误', '保存失败: ' + data, 'error');
+                            }
+                            $('#Database_setting').datagrid('reload');
                         }
-                        $('#Database_setting').datagrid('reload');        
-                    }
-                ); 
+                );
             } else {
                 $.messager.alert('告警', '保存失败,请检查是否设置必填(必选)项', 'error');
                 $('#Database_setting').datagrid('reload');
             }
 
             ifInsert = undefined;
-            editIndex = undefined; 
-            project_id_list = undefined;
+            editIndex = undefined;
+            project_id_list = [];
             onLoadSuccess();
         }
 
@@ -248,17 +214,17 @@
             if (editIndex == undefined) {
                 $.messager.alert('提示', '操作失败，没有正在编辑的记录', 'info');
                 return;
-            } 
-            $('#Database_setting').datagrid('endEdit', editIndex);             
+            }
+            $('#Database_setting').datagrid('endEdit', editIndex);
             $('#Database_setting').datagrid('reload', editIndex);
-         
+
             ifInsert = undefined;
             editIndex = undefined;
-            project_id_list = undefined;
+            project_id_list = [];
 
-            onLoadSuccess();                       
+            onLoadSuccess();
         }
- 
+
         // 结束编辑
         function endEditing(){
             if (editIndex == undefined) {
@@ -278,8 +244,8 @@
             db_name = $(this).datagrid('getEditor', {index: index,field: 'db_name'}).target.val();
             db_host = $(this).datagrid('getEditor', {index: index,field: 'db_host'}).target.val();
             db_port = $(this).datagrid('getEditor', {index: index,field: 'db_port'}).target.val();
-            db_user = $(this).datagrid('getEditor', {index: index,field: 'db_user'}).target.val();                    
-            db_passwd = $(this).datagrid('getEditor', {index: index,field: 'db_passwd'}).target.val();
+            db_user = $(this).datagrid('getEditor', {index: index,field: 'db_user'}).target.val();
+            db_passwd = $(this).datagrid('getEditor', {index: index,field: 'db_passwd'}).target.val()
             project_type = $(this).datagrid('getEditor', {index: index,field: 'project_type'}).target.combobox('getText');
             project_name = $(this).datagrid('getEditor', {index: index,field: 'project_name'}).target.combobox('getText');
             environment = $(this).datagrid('getEditor', {index: index,field: 'environment'}).target.combobox('getText');
@@ -287,13 +253,13 @@
 
         // 点击表格 修改 按钮的函数实现
         function editRow(rowID, index){
-            if (endEditing()) { 
+            if (endEditing()) {
                 if (index == undefined) { // 点击表格上方的 修改 按钮
                     //获取选中行的数据  
                     var rowsSelected = $('#Database_setting').datagrid('getSelections');
                     if (rowsSelected.length < 1) {  //如果没有选中行，提示信息  
-                        $.messager.alert("提示消息", "请选择要修改的记录！", 'info');  
-                        return;  
+                        $.messager.alert("提示消息", "请选择要修改的记录！", 'info');
+                        return;
                     } else if (rowsSelected.length > 1) {
                         $.messager.alert("提示信息", "每次只能选择一条记录！", 'info');
                         return;
@@ -305,68 +271,148 @@
                     editIndex = index;
                 }
 
-                hideNoneEditBtn(editIndex);  
+                hideNoneEditBtn(editIndex);
 
-                $('#Database_setting').datagrid('unselectAll');           
+                $('#Database_setting').datagrid('unselectAll');
                 var row = $('#Database_setting').datagrid('selectRow', editIndex);
                 $(row).datagrid('beginEdit', editIndex);
 
-                editor = $(row).datagrid('getEditor', {index: editIndex,field: 'db_passwd'});
-                passwd = editor.target.val();
-                if(passwd != '')
-                    editor.target.val('**************');
-                //$(this).datagrid('getEditor', {index: index,field: 'db_passwd'}).target.setText('');
-                
-                var projectTypeEditor = $('#Database_setting').datagrid('getEditor', {index: editIndex, field:'project_type'});
-                // 获取项目类型
-                var projectType = projectTypeEditor.target.combobox('getText');
+                var projectType = rowsSelected[0].project_type;
+                var projectIDList = rowsSelected[0].project_id.split(',');
+                var envIDList = rowsSelected[0].environment_id.toString().split(',');
 
-                // 设置设置项目名称,让已选值和下拉列表选项关联
-                var projectEditor =  $('#Database_setting').datagrid('getEditor', {index: editIndex, field: 'project_name'});
-                $(projectEditor.target).combobox('clear');
-                $(projectEditor.target).combobox('setValues', rowsSelected[0].project_id.split(','));
 
-                // 初始化combobox的data
-                initDataForCombobox(projectType, '修改');
-
-                ifInsert = false;              
-            }  
+                // 初始化行组件的值
+                initDataForRowComponets(projectType, '修改', projectIDList, envIDList);
+                ifInsert = false;
+            }
         }
 
-        //选择所属项目下拉列表项时触发事件
-        function onSelectForProjectCombobox(row) {
 
-        }
+        // 初始化行记录组件值
+        function initDataForRowComponets(projectType, opType, projectIDList, envIDList) {
+            var environmentEditor =  $('#Database_setting').datagrid('getEditor', {index: editIndex, field: 'environment'});
+            var projectEditor =  $('#Database_setting').datagrid('getEditor', {index: editIndex, field: 'project_name'});
 
-        function onChangeForProjectCombobox(newValue, oldValue) {
-            textChanged = true;
-            project_id_list = oldValue;
-        }
+            if (opType == '新增') {
+                // 设置默认数据库类型
+                var dbTypEditor =  $('#Database_setting').datagrid('getEditor', {index: editIndex, field: 'db_type'});
+                $(dbTypEditor.target).combobox('setText', 'MySQL');
 
-        //取消选择计划名称下拉列表项时触发事件
-        function onUnselectForProjectCombobox(row) {
-            // var index = plan_id_list.indexOf(row.id.toString());
-            // if(index != -1) {
-            //     plan_id_list.splice(index, 1);
-            // }
+                // 设置默认项目类型
+                var projectTypeEditor =  $('#Database_setting').datagrid('getEditor', {index: editIndex, field: 'project_type'});
+                $(projectTypeEditor.target).combobox('setText',projectType);
+
+                // 请求所属环境下拉列表数据
+                $.get('/action/getEnvs', function(data,status) {
+                    var jsonData = JSON.parse(data);
+                    if (jsonData['result'] == 'success') {
+                        $(environmentEditor.target).combobox('loadData', jsonData['data']);
+
+                    } else {
+                        $.messager.alert('错误信息', '获取可用环境列表出错: ' + jsonData['data'], 'error');
+                    }
+                });
+            } else if (opType == '修改') {
+                // 做这一步是为了让项目名称、环境名称已选文本值和下拉列表中的选项关联
+                $(projectEditor.target).combobox('setValues', projectIDList);
+                $(environmentEditor.target).combobox('setValues', envIDList);
+
+                // 请求所属环境下拉列表数据
+                $.get('/action/getEnvs', function(data,status) {
+                    var jsonData = JSON.parse(data);
+                    if (jsonData['result'] == 'success') {
+                        $(environmentEditor.target).combobox('loadData', jsonData['data']);
+
+                    } else {
+                        $.messager.alert('错误信息', '获取可用环境列表出错: ' + jsonData['data'], 'error');
+                    }
+                });
+
+            }
+
+            if (projectType == 'UI项目') {
+                projectType = 'UIProject';
+            } else if(projectType == 'API项目'){
+                projectType = 'APIProject';
+            } else if(projectType == '所有项目'){
+                projectType = 'ALLProject';
+            } else {
+                return;
+            }
+
+
+            // 请求所属项目项目下拉列表
+            getProjects(projectType).then(function(jsonData) {
+                if (jsonData['result'] == 'success') {
+                    if (opType == '切换项目类型'){
+                        $(projectEditor.target).combobox('clear');
+                    }
+                    $(projectEditor.target).combobox('loadData', jsonData['data']);
+                } else {
+                    $.messager.alert('错误信息', '获取项目失败：' + jsonData['data'], 'error');
+                }
+            });
         }
 
         // 选择项目类型时触发事件
         function onSelectForProjectTypeCombobox(row){
-            project_type = row.choice;
-            if (project_type == '') { //通过这个判断，控制初始化顺序带来的字段不识别问题
+            var projectTtype = row.choice;
+            if (projectTtype == '') { //通过这个判断，控制初始化顺序带来的字段不识别问题
                 return;
             }
-            // 初始化项目combobox下拉列表// 暂时不管是UI项目还是API项目，统一从UI项目配置表中读取
-            initDataForCombobox(project_type, '切换项目类型');
+
+            initDataForProjectCombobox(projectTtype, '切换项目类型');
         }
 
+        // 下拉点选所属项目列表选项时触发的事件
+        function onSelectForProjectCombobox(row) {
+            var index = project_id_list.indexOf(row.id2);
+
+            // 如果不存在，则添加记录id属性值到数组，否则移除数组
+            if(index != -1) {
+                project_id_list.splice(index, 1);
+            } else {
+                project_id_list.push(row.id2);
+            }
+        }
+
+        //取消所属项目列表项时触发事件
+        function onUnselectForProjectCombobox(row) {
+            var index = project_id_list.indexOf(row.id2.toString());
+            if(index != -1) { // 如果被取消项的id值存在数组中，则移除对应id
+                project_id_list.splice(index, 1);
+            }
+        }
+
+        // 收起 所属项目 下拉列表框时触发的事件
+        function onHidePanelForProjectCombobox(row){
+            // 设置commbox输入框的文本值
+            var projectNameEditor = $('#Database_setting').datagrid('getEditor', {index: editIndex, field:'project_name'});
+            $(projectNameEditor.target).combobox('setValue', project_id_list);
+        }
+
+
+        // 选择项目类型时触发事件
+        function onSelectForProjectTypeCombobox(row){
+            var projectType = row.choice;
+            if (projectType == '') { //通过这个判断，控制控件初始化顺序带来的字段不识别问题
+                return;
+            }
+
+            initDataForRowComponets(projectType, '切换项目类型');
+        }
+
+        //选择所属环境下拉列表项时触发事件
+        function onSelectForEnvCombobox(row) {
+            environment_id = row.id
+        }
 
     </script>
 </head>
 <body>
-    <table class="easyui-datagrid" rownumbers="true" pagination="true" id="Database_setting"
-        data-options="border:false,
+<table class="easyui-datagrid" rownumbers="true" pagination="true" id="Database_setting"
+       data-options="border:false,
         singleSelect:false,
         fit:true,
         fitColumns:false,
@@ -378,12 +424,12 @@
         url: '/action/loadDatabaseSettings',
         method: 'get',
         onEndEdit:onEndEdit,
-        onLoadSuccess:onLoadSuccess"> 
-        <thead>
-            <tr>
-                <th data-options="field:'ck',checkbox:true"></th>
-                <th data-options="field:'id', align: 'center', fitColumns:true">ID</th>
-                <th data-options="field:'db_type', align: 'center', editor:{
+        onLoadSuccess:onLoadSuccess">
+    <thead>
+    <tr>
+        <th data-options="field:'ck',checkbox:true"></th>
+        <th data-options="field:'id', align: 'center', fitColumns:true">ID</th>
+        <th data-options="field:'db_type', align: 'center', editor:{
                     type:'combobox',
                     options:{
                         valueField:'id',
@@ -393,19 +439,19 @@
                         panelHeight:'auto',
                         editable:false
                     }}" width="80px">数据库类型</th>
-                <th data-options="field:'db_alias', align: 'center', editor:{type:'text', options:{required:true}}" 
-                width="100px">数据库别名</th>
-                <th data-options="field:'db_name', align: 'center', editor:{type:'text', options:{required:true}}" 
-                width="100px">数据库名</th>
-                <th data-options="field:'db_host', align: 'center', editor:{type:'text', options:{required:true}}" 
-                width="100px">主机地址</th>
-                <th data-options="field:'db_port', align: 'center', editor:{type:'text', options:{required:true}}" 
-                width="50px">端口号</th>                
-                <th data-options="field:'db_user', align: 'center', editor:{type:'text', options:{required:true}}" 
-                width="150px">用户名</th>
-                <th data-options="field:'db_passwd', align: 'center', editor:{type:'text', options:{required:true}}" 
-                width="150px">密码</th>
-                <th data-options="field:'project_type', align: 'center', editor:{
+        <th data-options="field:'db_alias', align: 'center', editor:{type:'text', options:{required:true}}"
+            width="100px">数据库别名</th>
+        <th data-options="field:'db_name', align: 'center', editor:{type:'text', options:{required:true}}"
+            width="100px">数据库名</th>
+        <th data-options="field:'db_host', align: 'center', editor:{type:'text', options:{required:true}}"
+            width="100px">主机地址</th>
+        <th data-options="field:'db_port', align: 'center', editor:{type:'text', options:{required:true}}"
+            width="50px">端口号</th>
+        <th data-options="field:'db_user', align: 'center', editor:{type:'text', options:{required:true}}"
+            width="150px">用户名</th>
+        <th data-options="field:'db_passwd', align: 'center', editor:{type:'text', options:{required:true}}"
+            width="150px">密码</th>
+        <th data-options="field:'project_type', align: 'center', editor:{
                         type:'combobox',
                         options:{
                             valueField:'id',
@@ -415,22 +461,21 @@
                             editable:false,
                             panelHeight:'auto',
                             onSelect: onSelectForProjectTypeCombobox
-                        }}" width="70px">项目类型</th>  
-                <th data-options="field:'project_name', align: 'left', editor:{
+                        }}" width="70px">项目类型</th>
+        <th data-options="field:'project_name', align: 'left', editor:{
                         type:'combobox',
                         options:{
                             valueField:'id2',
                             textField:'choice',
                             required:true,
                             editable:true,
-                            multiple:'true',
+                            multiple:true,
                             panelHeight:'auto',
                             onSelect: onSelectForProjectCombobox,
                             onUnselect:onUnselectForProjectCombobox,
-                            onHidePanel:onHidePanelForCombobox,
-                            onChange:onChangeForProjectCombobox
+                            onHidePanel:onHidePanelForProjectCombobox,
                         }}" width="400px">所属项目</th>
-                <th data-options="field:'environment', align: 'center', editor:{
+        <th data-options="field:'environment', align: 'center', editor:{
                         type:'combobox',
                         options:{
                             valueField:'id',
@@ -438,19 +483,19 @@
                             required:true,
                             editable:false,
                             panelHeight:'auto',
-                            data:[{id:0, choice:'测试环境'},{id:1, choice:'预发布环境'}, {id:2, choice:'生产环境'}]
-                        }}" width="130px">所属环境</th>                        
-                <th data-options="field:'order', align: 'center'" width='50px'>顺序</th>    
-                <th data-options="field:'operations', title:'操作', align: 'center',
-                    formatter:function(value,row,index){return formatOtherOperationColumn(value,row,index);}"  
-                    width="300px">操作</th>   
-            </tr>
-        </thead> 
-    </table>
+                            onSelect:onSelectForEnvCombobox
+                        }}" width="130px">所属环境</th>
+        <th data-options="field:'order', align: 'center'" width='50px'>顺序</th>
+        <th data-options="field:'operations', title:'操作', align: 'center',
+                    formatter:function(value,row,index){return formatOtherOperationColumn(value,row,index);}"
+            width="300px">操作</th>
+    </tr>
+    </thead>
+</table>
 
-    <!--增加工具条-->
-   <script type="text/javascript">
-       var toolbar = addToolbar('Database_setting'); 
-   </script>   
+<!--增加工具条-->
+<script type="text/javascript">
+    var toolbar = addToolbar('Database_setting');
+</script>
 </body>
 </html>

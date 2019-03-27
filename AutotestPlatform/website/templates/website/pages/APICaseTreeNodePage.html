@@ -36,6 +36,7 @@
         var input_params = undefined;  // 输入参数
         var response_to_check = undefined; // 要检查的响应
         var check_rule = undefined;        // 检查规则
+
         var check_pattern = undefined;     // 检查模式
         var output_params = undefined; // 输出参数
         var protocol  = undefined; // 协议
@@ -43,9 +44,10 @@
         var port = undefined;  // 端口
         var run_times = undefined;  //运行次数
         var try_for_failure = undefined; // 失败重试次数
+        var retry_frequency = undefined;     // 失败重试频率
         var case_id = undefined;  // 用例ID
-        var object_id = -1; //  操作对象ID
-        
+        var object_id = null; //  操作对象ID
+
         function onLoadSuccess(data) {
             // 修改“操作”列的按钮样式
             $('.insertRowBtn').linkbutton({text:'插入', plain:true, iconCls:'icon-add'});
@@ -126,10 +128,7 @@
                 var row = $('#API_test_case_step').datagrid('selectRow', editIndex);
                 $(row).datagrid('beginEdit', editIndex);
 
-                // 设置默认值
-                $(row).datagrid('getEditor', {index: editIndex,field: 'step_type'}).target.combobox('setText','请求接口');               
-                initDataForRowcomponent('请求接口', '新增');
- 
+                initDataForRowcomponents('请求接口', '新增');
                 ifInsert = true;
             }                
         }
@@ -162,6 +161,7 @@
                         port:row.port,
                         run_times:row.run_times, //运行次数
                         try_for_failure:row.try_for_failure, // 失败重试次数
+                        retry_frequency:row.retry_frequency,
                         object_id:row.object_id,
                         case_id:nodeID
                 };
@@ -189,8 +189,7 @@
             }
 
             editIndex = undefined; 
-            object_id = -1;       
-        }  
+        }
         
        
         // 点击 保存 按钮的函数实现
@@ -210,6 +209,7 @@
                 output_params = $.trim(output_params);
                 run_times = $.trim(run_times);
                 try_for_failure = $.trim(try_for_failure);
+                retry_frequency = $.trim(retry_frequency);
 
                 if (op_object == '') {
                     $.messager.alert('提示','保存失败，操作对象不能为空', 'warnging');
@@ -228,6 +228,9 @@
                     isValid = false;
                 } else if (try_for_failure != '' && isNaN(try_for_failure)){
                     $.messager.alert('提示', '保存失败，失败重试次数只能为数字', 'warnging');
+                     isValid = false;
+                }else if (retry_frequency != '' && isNaN(retry_frequency)){
+                    $.messager.alert('提示', '保存失败，重试频率只能为数字', 'warnging');
                      isValid = false;
                 }
 
@@ -326,6 +329,7 @@
                         port:port,
                         run_times:run_times,
                         try_for_failure:try_for_failure,
+                        retry_frequency:retry_frequency,
                         object_id:object_id,
                         case_id:nodeID
                     };
@@ -349,6 +353,7 @@
                         port:port,
                         run_times:run_times,
                         try_for_failure:try_for_failure,
+                        retry_frequency:retry_frequency,
                         object_id:object_id,
                     };
                 }
@@ -370,7 +375,6 @@
             ifInsert = undefined;
             editIndex = undefined; 
             onLoadSuccess();
-            object_id = -1;
         }
 
         // 点击 取消 按钮的函数实现
@@ -384,8 +388,7 @@
          
             ifInsert = undefined;
             editIndex = undefined;
-            object_id = -1;
-            onLoadSuccess();                       
+            onLoadSuccess();
         }
  
           // 结束编辑
@@ -417,6 +420,7 @@
             port = $(this).datagrid('getEditor', {index: index, field:'port'}).target.val();
             run_times = $(this).datagrid('getEditor', {index: index,field: 'run_times'}).target.val();
             try_for_failure = $(this).datagrid('getEditor', {index: index,field: 'try_for_failure'}).target.val();
+            retry_frequency = $(this).datagrid('getEditor', {index: index,field: 'retry_frequency'}).target.val();
         }
 
         // 点击表格 修改 按钮的函数实现
@@ -443,34 +447,25 @@
                 $('#API_test_case_step').datagrid('unselectAll');
                 var rowSelected = $('#API_test_case_step').datagrid('selectRow', editIndex);
                 var row = $('#API_test_case_step').datagrid('getSelected');
-     
+
                 $(rowSelected).datagrid('beginEdit', editIndex);
 
-                var step_type = row.step_type;
+                var stepType = row.step_type;
 
-                // 去除输入参数，输出 中的 <xmp> </xmp>
+                // 去除输入参数,输出 中的 <xmp> </xmp>
                 var inputParams = row.input_params;
                 inputParams = inputParams.substring(5, inputParams.length-6);
-                $('#API_test_case_step').datagrid('getEditor', {index: editIndex, field:'input_params'}).target.val(inputParams);
-
                 var checkPattern = row.check_pattern;
                 checkPattern = checkPattern.substring(5, checkPattern.length-6);
-                $('#API_test_case_step').datagrid('getEditor', {index: editIndex, field:'check_pattern'}).target.val(checkPattern);
-
-
-                initDataForRowcomponent(step_type, '修改');
+                var opObjectIDList = row.object_id.toString().split(',');
+                initDataForRowcomponents(stepType, '修改', inputParams, checkPattern, opObjectIDList);
 
                 ifInsert = false;              
             }  
         }
 
-        var rowSelected = undefined; //用于存储从commbox选择的项
-        var textChanged = false;    // 用于判断是否combobox选取、输入的内容是否改变
-    
-
         // 初始化行记录组件值
-        function initDataForRowcomponent(stepType, flag) {
-            // var stepTypeEditor = $('#API_test_case_step').datagrid('getEditor', {index: editIndex, field:'step_type'});
+        function initDataForRowcomponents(stepType, opType, inputParams, checkPattern, opObjectIDList) {
             var opObjectEditor = $('#API_test_case_step').datagrid('getEditor', {index: editIndex, field:'op_object'});
             var operationEditor = $('#API_test_case_step').datagrid('getEditor', {index: editIndex, field:'exec_operation'});
             var requestHeaderEditor = $('#API_test_case_step').datagrid('getEditor', {index: editIndex, field:'request_header'});   
@@ -486,12 +481,19 @@
             var portEditor = $('#API_test_case_step').datagrid('getEditor', {index: editIndex, field:'port'});
             var runTimesEditor = $('#API_test_case_step').datagrid('getEditor', {index: editIndex,field: 'run_times'});
             var tryForFailureEditor = $('#API_test_case_step').datagrid('getEditor', {index: editIndex,field: 'try_for_failure'});
+            var retryFrequencyEditor = $('#API_test_case_step').datagrid('getEditor', {index: editIndex,field: 'retry_frequency'});
 
-            var currentTab = window.parent.$('#tabs').tabs('getSelected');
-            var tabID = currentTab.panel('options').id;
-            var projectID = tabID.split('-')[0];
-            var caseID = tabID.split('-')[1];
-            if (flag=='新增' || flag == '切换步骤类型') {
+            if (opType == '新增') {
+                var stepTypeEditor = $('#API_test_case_step').datagrid('getEditor', {index: editIndex, field:'step_type'});
+                stepTypeEditor.target.combobox('setText','请求接口');
+                runTimesEditor.target.val('1');
+                tryForFailureEditor.target.val('1');
+                retryFrequencyEditor.target.val('3');
+            } else if (opType == '修改') {
+                opObjectEditor.target.combobox('setValues', opObjectIDList);
+                inputParamsEditor.target.val(inputParams);
+                checkPatternEditor.target.val(checkPattern);
+            } else if (opType == '切换步骤类型') {
                 opObjectEditor.target.combobox('clear');
                 operationEditor.target.combobox('clear');
                 requestHeaderEditor.target.val('');
@@ -505,9 +507,13 @@
                 protocolEditor.target.val('');
                 hostEditor.target.val('');
                 portEditor.target.val('');
-                runTimesEditor.target.val('1');
-                tryForFailureEditor.target.val('1');
             }
+
+            var currentTab = window.parent.$('#tabs').tabs('getSelected');
+            var tabID = currentTab.panel('options').id;
+            var projectID = tabID.split('-')[0];
+            var caseID = tabID.split('-')[1];
+
             if (stepType == '请求接口') {
                 // 请求操作对象
                 opObjectEditor.target.combobox('loadData', [{'id':0, 'choice':'APIUnittestTestCase'}]);
@@ -799,14 +805,12 @@
 
         //选择步骤类型下拉列表项时触发事件
         function onSelectForStepTypeCombobox(row) {
-            rowSelected = row;
-            initDataForRowcomponent(row.choice, '切换步骤类型');
+            initDataForRowcomponents(row.choice, '切换步骤类型');
         }
 
  
         // 选择 操作对象 下拉列表项时触发的事件
         function onSelectForOpObjectCombobox(row) {
-            rowSelected = row;
             object_id = row.id;
 
             // 如果执行操作为 call,即说明步骤类型为执行函数，自动在 输入参数 输入框中填写参数样例
@@ -818,50 +822,17 @@
             }
         }
 
+        // 收起操作对象下拉列表时，设置已选值
+        function onHidePanelForOpObjectCombobox() {
+            var opObjectEditor = $('#API_test_case_step').datagrid('getEditor', {index: editIndex, field:'op_object'});
+            $(opObjectEditor.target).combobox('setValue', object_id.toString().split(','));
+        }
+
+
         // 选择 校验规则 下拉列表项时触发的事件
         function onSelectForCheckRuleCombobox(row){
-            rowSelected = row;
             var editor = $('#API_test_case_step').datagrid('getEditor', {index: editIndex, field:'check_pattern'});
             $(editor.target).val(row.assert_pattern);
-        }
-
-        // 收起下单选Combobox下拉列表时触发事件
-        function onHidePanelForSingleSelectCombobox() {
-            var text = $(this).combobox('getText'); // 获取输入框的值
-            if (textChanged) {
-                if (rowSelected == undefined) { // 表明是手动输入的值
-                    //循环遍历下拉列表框的选项，判断输入值是否在选项中，否则清空
-                    var comboboxData = $(this).combobox('getData');
-                    var if_found = false; // 用于判断是否找到标记
-                    for (var j=0; j<comboboxData.length; j++) {
-                        var dataObj = comboboxData[j];
-                        if(dataObj.choice == text) {
-                            if_found = true;
-                            break;
-                        }else{
-                            if_found = false;
-                        }    
-                    }
-                    if(!if_found) { 
-                        $(this).combobox('clear'); // 清空输入框
-                        $.messager.alert('提示', '请选择现有项', 'warn');
-                    }                   
-                } else { // 通过“点选”下拉列表选择的值
-                    if (text != rowSelected.choice) {
-                        $(this).combobox('clear'); // 清空输入框
-                        $.messager.alert('提示', '请选择现有项', 'warn');
-                    }
-
-                }
-                textChanged = false;
-
-            }
-            rowSelected = undefined;                  
-        }
-
-        // commbox输入框的值改变时触发事件
-        function onChangeForCombobox(newValue, oldValue) {
-            textChanged = true;       
         }
 
 
@@ -1010,8 +981,7 @@
                             editable:true,
                             panelHeight:'auto',
                             onSelect: onSelectForOpObjectCombobox,
-                            onHidePanel:onHidePanelForSingleSelectCombobox,
-                            onChange:onChangeForCombobox
+                            onHidePanel:onHidePanelForOpObjectCombobox
                         }
                     }" width="200px">操作对象</th>
                 <th data-options="field:'object_id', align: 'center', fitColumns:true">对象ID</th> 
@@ -1059,9 +1029,9 @@
                             editable:true,
                             panelHeight:'200',
                             onSelect:onSelectForCheckRuleCombobox,
-                            onHidePanel:onHidePanelForSingleSelectCombobox,
+                            onHidePanel:onHidePanelForCombobox,
                             onChange:onChangeForCombobox
-                        }}" width="125px">校验规则</th>                 
+                        }}" width="125px">校验规则</th>
                 <th data-options="field:'check_pattern', align: 'left', editor:{type:'textarea'}, styler:setCellStyle" width="400px">校验模式</th>
                 <th data-options="field:'output_params', align: 'center', editor:{type:'textarea'}, styler:setCellStyle" width="400px">输出</th>  
                 <th data-options="field:'protocol', align: 'center', editor:{type:'text'}" width="50px">协议</th>
@@ -1069,6 +1039,7 @@
                 <th data-options="field:'port', align: 'center', editor:{type:'text'}" width="60px">端口</th>
                 <th data-options="field:'run_times', align: 'center', editor:{type:'text'},fitColumns:true">运行次数</th>
                 <th data-options="field:'try_for_failure', align: 'center', editor:{type:'text'},fitColumns:true">失败重试次数</th>
+                <th data-options="field:'retry_frequency', align: 'center', editor:{type:'text'},fitColumns:true">重试频率</th>
                 <th data-options="field:'operation',title:'操作', align: 'center', fitColumns:false,
                 formatter:function(value,row,index){
                     return formatOperationColumn(value,row,index);}"  

@@ -534,7 +534,7 @@ function onHidePanelForCombobox(){
             $.messager.alert('告警', '请通过下拉列表择现有项', 'warning');                 
         } else {
             $(this).combobox('clear');
-			$(this).combobox('setText', res);
+            $(this).combobox('setText', res);
         }             
     } 
     textChanged = false;     

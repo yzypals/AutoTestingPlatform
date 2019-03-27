@@ -68,11 +68,10 @@ def add_running_plan(request):
         project_type = params['project_type']
         project_id =  params['project_id']
         project_name = params['project_name']
-        plan_id = list(eval(params['plan_id']))
-        for item in plan_id[:]:
-            if type(item) == type('') and not item.isdigit():
-                plan_id.remove(item)
-        plan_id = str(plan_id).lstrip('[').rstrip(']') # 存储plan_id为 '2,3,4'这个形式的，方便触发器做FIND_IN_SET判断
+        # for item in plan_id[:]:
+        #     if type(item) == type('') and not item.isdigit():
+        #         plan_id.remove(item)
+        plan_id = params['plan_id']
         plan_name = params['plan_name']
         script_dirpath = params['script_dirpath'].strip()
         python_path = params['python_path'].strip()
@@ -94,19 +93,22 @@ def add_running_plan(request):
             return  HttpResponse('保存失败，计划名称不能为空')
         if script_dirpath == '':
             return  HttpResponse('保存失败，运行脚本所在父级目录绝对路径不能为空')
-        elif not os.path.exists(script_dirpath):
-            logger.info(script_dirpath)
-            return  HttpResponse('保存失败，运行脚本所在父级路径不存在')
-        elif not os.path.isdir(script_dirpath):
-            return  HttpResponse('保存失败，自动化脚本所在父级路径不为目录')
-        else:
-            # logger.info('正在规范化路径')
-            script_dirpath = os.path.normpath(script_dirpath)
-        if not os.path.exists(python_path):
-            return  HttpResponse('保存失败，python.exe程序绝对路径不存在')
-        else:
-            # logger.info('正在规范化路径')
-            python_path = os.path.normpath(python_path)
+        # elif not os.path.exists(script_dirpath):
+        #     logger.info(script_dirpath)
+        #     return  HttpResponse('保存失败，运行脚本所在父级路径不存在')
+        # elif not os.path.isdir(script_dirpath):
+        #     return  HttpResponse('保存失败，自动化脚本所在父级路径不为目录')
+        # else:
+        #     # logger.info('正在规范化路径')
+        #     script_dirpath = os.path.normpath(script_dirpath)
+        # if not os.path.exists(python_path):
+        #     return  HttpResponse('保存失败，python.exe程序绝对路径不存在')
+        # else:
+        #     # logger.info('正在规范化路径')
+        #     python_path = os.path.normpath(python_path)
+
+        script_dirpath = os.path.normpath(script_dirpath)
+        python_path = os.path.normpath(python_path)
         if valid_flag == '':
             return  HttpResponse('保存失败，是否启用不能为空')
 
@@ -147,29 +149,39 @@ def update_running_plan(request):
 
         id = params['id']
         running_plan_name = params['running_plan_name']
+        project_type = params['project_type']
+        project_id = params['project_id']
+        project_name = params['project_name']
+        plan_id = params['plan_id']
+        plan_name = params['plan_name']
         script_dirpath = params['script_dirpath']
         python_path = params['python_path']
         valid_flag = params['valid_flag']
 
         if script_dirpath == '':
             return  HttpResponse('保存失败，自动化脚本所在父级目录绝对路径不能为空')
-        elif not os.path.exists(script_dirpath):
-            return  HttpResponse('保存失败，自动化脚本所在父级路径不存在')
-        elif not os.path.isdir(script_dirpath):
-            return  HttpResponse('保存失败，运行脚本所在父级路径不为目录')
-        else:
-            # logger.info('正在规范化路径')
-            script_dirpath = os.path.normpath(script_dirpath)
-        if not os.path.exists(python_path):
-            return  HttpResponse('保存失败，python.exe程序绝对路径不存在')
-        else:
-            # logger.info('正在规范化路径')
-            python_path = os.path.normpath(python_path)
+        # elif not os.path.exists(script_dirpath):
+        #     return  HttpResponse('保存失败，自动化脚本所在父级路径不存在')
+        # elif not os.path.isdir(script_dirpath):
+        #     return  HttpResponse('保存失败，运行脚本所在父级路径不为目录')
+        # else:
+        #     # logger.info('正在规范化路径')
+        #     script_dirpath = os.path.normpath(script_dirpath)
+        # if not os.path.exists(python_path):
+        #     return  HttpResponse('保存失败，python.exe程序绝对路径不存在')
+        # else:
+        #     # logger.info('正在规范化路径')
+        #     python_path = os.path.normpath(python_path)
         if valid_flag == '':
             return  HttpResponse('保存失败，是否启用不能为空')
 
         obj = Running_plan.objects.get(id=id)
         obj.running_plan_name =running_plan_name
+        obj.project_type = project_type
+        obj.project_id = project_id
+        obj.project_name = project_name
+        obj.plan_id = plan_id
+        obj.plan_name = plan_name
         obj.script_dirpath = script_dirpath
         obj.python_path = python_path
         obj.valid_flag = valid_flag

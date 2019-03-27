@@ -29,6 +29,10 @@ insert into `website_navigation` (`id`, `menu_name`, `parent_id`, `url`, `icon`,
 insert into `website_navigation` (`id`, `menu_name`, `parent_id`, `url`, `icon`, `order`) values('141','UI测试报告','140','/pages/UITestReport.html','icon-set','1');
 insert into `website_navigation` (`id`, `menu_name`, `parent_id`, `url`, `icon`, `order`) values('142','API测试报告','140','/pages/APITestReport.html','icon-set','2');
 
+# 环境配置
+insert into `website_env_setting` (`id`, `env`, `order`) values('1','测试环境','1');
+insert into `website_env_setting` (`id`, `env`, `order`) values('2','开发环境','2');
+
 # 初始化浏览器配置
 insert into `website_browser_setting` (`id`, `browser`, `order`) values('1','谷歌','1');
 insert into `website_browser_setting` (`id`, `browser`, `order`) values('2','IE','2');
@@ -125,6 +129,30 @@ insert into `website_function_setting` (`id`, `function_name`, `param_style`, `o
 
 
 # 创建触发器
+
+# 删除环境配置时，如果UI、API项目配置表|数据库配置表引用了该项目，则不让删除（全局变量配置表也引用了环境配置，但是这里不做校验）
+DROP TRIGGER IF EXISTS trigger_on_env_setting_delete;
+DELIMITER //
+CREATE TRIGGER trigger_on_env_setting_delete 
+BEFORE DELETE ON `website_env_setting`
+FOR EACH ROW
+BEGIN
+   IF old.id IN (SELECT environment_id FROM `website_ui_project_setting`)
+      THEN  
+          SIGNAL SQLSTATE 'HY000' SET MESSAGE_TEXT = '该记录已被[UI项目配置]引用' ;  
+   ELSEIF old.id IN (SELECT environment_id FROM `website_api_project_setting`)
+      THEN  
+          SIGNAL SQLSTATE 'HY000' SET MESSAGE_TEXT = '该记录已被[API项目配置]引用';
+   ELSEIF old.id IN (SELECT environment_id FROM `website_database_setting`)
+      THEN  
+          SIGNAL SQLSTATE 'HY000' SET MESSAGE_TEXT = '该记录已被[数据库配置]引用';
+   END IF;   
+END;
+//
+DELIMITER ;
+
+
+
 # 删除UI项目配置时，如果数据库配置表|全局变量配置表|运行计划表引用了该项目，则不让删除
 DROP TRIGGER IF EXISTS trigger_on_ui_project_setting_delete;
 DELIMITER //

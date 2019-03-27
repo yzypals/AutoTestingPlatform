@@ -6,6 +6,7 @@ from . import  views
 from . import common_views
 from . import test_task_manager_views
 from . import promble_manager_views
+from . import env_setting_views
 from . import browser_setting_views
 from . import database_setting_views
 from . import operation_setting_views
@@ -39,6 +40,9 @@ urlpatterns = [
     url(r'^action/removeTreeNode', common_views.remove_tree_node, name='remove_tree_node'),
     url(r'^action/dragTreeNode', common_views.drag_tree_node, name='drag_tree_node'),
     url(r'^action/copyTreeLeafNode', common_views.copy_tree_leaf_node, name='copy_tree_leaf_node'),
+
+    # 获取环境，用于其它项目使用
+    url(r'^action/getEnvs', common_views.get_envs, name='get_envs'),
 
     # 获取上次选择的项目(ID),用于展示树形结构，测试计划等
     url(r'^action/getProjectChosen', common_views.get_project_chosen, name='get_project_chosen'),
@@ -83,6 +87,11 @@ urlpatterns = [
     url(r'^action/addAPIProjectSetting', project_setting_views.add_api_project_setting, name='add_api_project_setting'),
     url(r'^action/editAPIProjectSetting', project_setting_views.edit_api_project_setting, name='edit_api_project_setting'),
 
+    # 环境配置
+    url(r'^pages/envSetting', env_setting_views.env_setting, name='env_setting'),
+    url(r'^action/loadEnvSettings', env_setting_views.get_env_settings, name='get_env_settings'),
+    url(r'^action/addEnvSetting', env_setting_views.add_env_setting, name='add_env_setting'),
+    url(r'^action/editEnvSetting', env_setting_views.edit_env_setting, name='edit_env_setting'),
 
     # 系统配置-浏览器配置
     url(r'^pages/browserSetting', browser_setting_views.browser_setting, name='browser_setting'),

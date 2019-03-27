@@ -46,7 +46,7 @@ def get_database_settings(request):
 
     objs = page.object_list
     for obj in objs:
-        if obj['db_passwd']:
+        if obj['db_passwd'] != '':
             obj['db_passwd'] = '**************'
         rows.append(obj)
     griddata["rows"] =  rows
@@ -69,6 +69,7 @@ def add_database_setting(request):
         project_name = params['project_name']
         project_id = params['project_id']
         environment = params['environment']
+        environment_id = params['environment_id']
         order = params['order']
 
         if not db_type:
@@ -107,7 +108,7 @@ def add_database_setting(request):
             else:
                 order = 1
             obj = Database_setting(db_type = db_type, db_alias=db_alias, db_name=db_name, db_host=db_host, db_port=db_port, db_user=db_user,
-                     db_passwd=db_passwd, project_type=project_type, project_name=project_name, environment=environment, order=order, project_id=project_id)
+                     db_passwd=db_passwd, project_type=project_type, project_name=project_name, environment=environment, environment_id=environment_id, order=order, project_id=project_id)
             obj.save()
         else: #表明是插入
             logger.info('即将插入新记录，正在调整记录的顺序') # 插入记录所在行上方的记录都+1
@@ -119,7 +120,7 @@ def add_database_setting(request):
                         item.save()
 
                     obj = Database_setting(db_type = db_type, db_alias=db_alias, db_name=db_name, db_host=db_host, db_port=db_port, db_user=db_user,
-                                           db_passwd=db_passwd, project_type=project_type, project_name=project_name, environment=environment, order=order, project_id=project_id)
+                                           db_passwd=db_passwd, project_type=project_type, project_name=project_name, environment=environment, environment_id=environment_id, order=order, project_id=project_id)
                     obj.save()
             except Exception as e:
                 logger.error('%s' % e)
@@ -145,6 +146,7 @@ def edit_database_setting(request):
         project_type = params['project_type']
         project_name = params['project_name']
         environment = params['environment']
+        environment_id = params['environment_id']
         project_id = params['project_id']
 
         if not db_type:
@@ -182,14 +184,13 @@ def edit_database_setting(request):
         obj.db_host = db_host
         obj.db_port = db_port
         obj.db_user = db_user
-        if db_passwd != '**************':
+        if db_passwd.strip() != '**************':
             obj.db_passwd = db_passwd
         obj.project_type = project_type
         obj.project_name = project_name
+        obj.project_id = project_id
         obj.environment = environment
-
-        if project_id:
-            obj.project_id = project_id
+        obj.environment_id = environment_id
         obj.save()
 
         # logger.info('同步更新UI测试用例详情表')

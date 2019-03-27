@@ -44,7 +44,7 @@ if __name__ == '__main__':
                                                         'FROM `website_running_plan` WHERE running_plan_num =%s', (running_plan_num,))
                 if result[0] and result[1]:
                     running_plan_name, project_id, project_name, plan_name, plan_id_list, valid_flag = result[1]
-                    plan_id_list = list(eval(plan_id_list + ','),) # 转字符串表示的list为列表
+                    plan_id_list = plan_id_list.split( ',') # 转字符串表示的list为列表
                     logger.info('待运行项目：名称：%s，ID：%s，关联的测试计划有：%s' % (project_name, project_id, plan_name))
                     if valid_flag == '启用':
                         running_plan = RunningPlan(running_plan_num, running_plan_name, project_id, project_name, plan_name, plan_id_list)

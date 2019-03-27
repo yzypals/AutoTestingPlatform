@@ -23,6 +23,7 @@
         var host = undefined;      //主机地址
         var port = undefined;      //端口
         var environment = undefined;  //所属环境
+        var environment_id = null; // 记录所属环境id
         var valid_flag = undefined;  //是否启用
         var order = undefined; // 顺序
 
@@ -97,8 +98,9 @@
                 $(row).datagrid('getEditor', {index: editIndex,field: 'protocol'}).target.combobox('setText', 'http');
                 $(row).datagrid('getEditor', {index: editIndex,field: 'port'}).target.val('80');
 
-                $(row).datagrid('getEditor', {index: editIndex,field: 'environment'}).target.combobox('setText', '测试环境');
-                $(row).datagrid('getEditor', {index: editIndex,field: 'valid_flag'}).target.combobox('setText', '启用');
+
+                initDataForRowComponets('新增');
+
                 ifInsert = true;
             }                
         }
@@ -141,6 +143,7 @@
                         host:host,
                         port:port,
                         environment:environment,
+                        environment_id:environment_id,
                         valid_flag:valid_flag,
                         order:order
                     };
@@ -153,6 +156,7 @@
                         host:host,
                         port:port,
                         environment:environment,
+                        environment_id:environment_id,
                         valid_flag:valid_flag,
                         order:order
                     };
@@ -237,8 +241,37 @@
                 var row = $('#API_project_setting').datagrid('selectRow', editIndex);
                 $(row).datagrid('beginEdit', editIndex);
 
+                var envIDList = rowsSelected[0].environment_id.toString().split(',');
+                initDataForRowComponets('修改', envIDList);
                 ifInsert = false;              
             }  
+        }
+
+        // 初始化行记录组件值
+        function initDataForRowComponets(opType, envIDList) {
+            var environmentEditor = $('#API_project_setting').datagrid('getEditor', {index: editIndex, field:'environment'});
+            var validFlagEditor = $('#API_project_setting').datagrid('getEditor', {index: editIndex, field:'valid_flag'});
+            // 请求环境配置
+            $.get('/action/getEnvs', function(data,status) {
+                var jsonData = JSON.parse(data);
+                if (jsonData['result'] == 'success') {
+                    $(environmentEditor.target).combobox('loadData', jsonData['data']);
+                } else {
+                    $.messager.alert('错误信息', '获取可用环境列表出错: ' + jsonData['data'], 'error');
+                }
+            });
+
+            if (opType=='新增') {
+                $(validFlagEditor.target).combobox('setText', '启用');
+            } else if (opType == '修改') {
+                var environmentEditor =  $('#API_project_setting').datagrid('getEditor', {index: editIndex, field: 'environment'});
+                $(environmentEditor.target).combobox('setValues', envIDList);
+            }
+        }
+
+        //选择所属环境下拉列表项时触发事件
+        function onSelectForEnvCombobox(row) {
+            environment_id = row.id
         }
 
     </script>
@@ -282,7 +315,7 @@
                             required:true,
                             panelHeight:'auto',
                             editable:false,
-                            data:[{id:0,choice:'测试环境'},{id:1,choice:'预发布环境'}, {id:2,choice:'生产环境'}]
+                            onSelect:onSelectForEnvCombobox
                         }}" width="120px">所属环境</th>
                 <th data-options="field:'valid_flag', align: 'center',fitColumns:true, editor:{
                     type:'combobox',

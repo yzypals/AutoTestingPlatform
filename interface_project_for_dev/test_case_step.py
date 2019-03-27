@@ -251,7 +251,7 @@ class TestCaseStep:
             result = [False, '失败', '%s' % e]
         finally:
             if not debug:
-                logger.info('======================正在记录用例步骤运行结果到测试报告-用例步骤执行明细表======================')
+                # logger.info('======================正在记录用例步骤运行结果到测试报告-用例步骤执行明细表======================')
                 if self.step_type not in ['操作数据库', '执行函数']:
                     self.input_params = self.http.get_request_param()
                     if type(self.input_params) == type(b''):
@@ -269,6 +269,9 @@ class TestCaseStep:
                 data = (self.execution_num, self.plan_id, self.case_id, self.step_id, self.order, self.step_type, self.op_object, self.object_id, self.exec_operation,
                             self.http.protocol, host, self.port, request_headers, self.request_method, url_or_sql,
                             input_params, self.response_to_check, self.check_rule, self.check_pattern, self.output_params, result[1], remark, start_time, 0)
-                test_reporter.insert_report_for_case_step(data)
+                # test_reporter.insert_report_for_case_step(data) # 注释，以防止记录失败重试过程中的步骤运行结果
+                result.append(data)
+            else:
+                pass
             return  result
 

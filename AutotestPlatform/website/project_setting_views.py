@@ -110,6 +110,8 @@ def add_ui_project_setting(request):
         project_name = params['project_name']
         home_page = params['home_page']
         environment = params['environment']
+        environment_id = params['environment_id']
+
         valid_flag = params['valid_flag']
         order = params['order']
         if not project_name:
@@ -131,7 +133,7 @@ def add_ui_project_setting(request):
                 order = max_order + 1
             else:
                 order = 1
-            obj = UI_project_setting(project_name=project_name, home_page=home_page,environment=environment, valid_flag=valid_flag, order=order)
+            obj = UI_project_setting(project_name=project_name, home_page=home_page, environment=environment, environment_id=environment_id, valid_flag=valid_flag, order=order)
             obj.save()
         else: #表明是插入
             # logger.info('即将插入新记录，正在调整记录的顺序') # 插入记录所在行上方的记录都+1
@@ -142,7 +144,7 @@ def add_ui_project_setting(request):
                         item.order = item.order + 1
                         item.save()
 
-                    obj = UI_project_setting(project_name=project_name, home_page=home_page,environment=environment, valid_flag=valid_flag, order=order)
+                    obj = UI_project_setting(project_name=project_name, home_page=home_page, environment=environment, environment_id=environment_id, valid_flag=valid_flag, order=order)
                     obj.save()
             except Exception as e:
                 logger.error('%s' % e)
@@ -187,6 +189,7 @@ def add_api_project_setting(request):
         host = params['host'].strip()
         port = params['port'].strip()
         environment = params['environment']
+        environment_id = params['environment_id']
         valid_flag = params['valid_flag']
         order = params['order']
         if not project_name:
@@ -218,7 +221,7 @@ def add_api_project_setting(request):
                 order = max_order + 1
             else:
                 order = 1
-            obj = API_project_setting(project_name=project_name, protocol=protocol, host=host, port=port, environment=environment, valid_flag=valid_flag, order=order)
+            obj = API_project_setting(project_name=project_name, protocol=protocol, host=host, port=port, environment=environment, environment_id=environment_id, valid_flag=valid_flag, order=order)
             obj.save()
         else: #表明是插入
             # logger.info('即将插入新记录，正在调整记录的顺序') # 插入记录所在行上方的记录都+1
@@ -229,7 +232,7 @@ def add_api_project_setting(request):
                         item.order = item.order + 1
                         item.save()
 
-                    obj = API_project_setting(project_name=project_name, protocol=protocol, host=host, port=port, environment=environment, valid_flag=valid_flag, order=order)
+                    obj = API_project_setting(project_name=project_name, protocol=protocol, host=host, port=port, environment=environment, environment_id=environment_id, valid_flag=valid_flag, order=order)
                     obj.save()
             except Exception as  e:
                 logger.error('%s' % e)
@@ -265,6 +268,7 @@ def edit_ui_project_setting(request):
         project_name = params['project_name']
         home_page = params['home_page']
         environment = params['environment']
+        environment_id = params['environment_id']
         valid_flag = params['valid_flag']
         if not project_name:
             return HttpResponse('项目名称不能为空')
@@ -282,6 +286,7 @@ def edit_ui_project_setting(request):
         obj.project_name = project_name
         obj.home_page = home_page
         obj.environment = environment
+        obj.environment_id = environment_id
         obj.valid_flag = valid_flag
         obj.save()
 
@@ -325,6 +330,7 @@ def edit_api_project_setting(request):
         host = params['host'].strip()
         port = params['port'].strip()
         environment = params['environment']
+        environment_id = params['environment_id']
         valid_flag = params['valid_flag']
         if not project_name:
             return HttpResponse('项目名称不能为空')
@@ -355,6 +361,7 @@ def edit_api_project_setting(request):
         obj.host = host
         obj.port = port
         obj.environment = environment
+        obj.environment_id = environment_id
         obj.valid_flag = valid_flag
         obj.save()
 

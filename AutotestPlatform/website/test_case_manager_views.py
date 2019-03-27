@@ -555,6 +555,7 @@ def add_api_case_step(request):
         port = params['port'].strip()
         run_times = params['run_times'].strip()
         try_for_failure = params['try_for_failure'].strip()
+        retry_frequency = params['retry_frequency'].strip()
         case_id = params['case_id']
 
         if step_type == '':
@@ -571,6 +572,8 @@ def add_api_case_step(request):
             return HttpResponse('保存失败，运行次数只能为数字')
         if not try_for_failure.isdigit() and try_for_failure !=  '':
             return HttpResponse('保存失败，失败重试次数只能为数字')
+        if not retry_frequency.isdigit() and retry_frequency !=  '':
+            return HttpResponse('保存失败，重试频率只能为数字')
 
 
         if run_times == '':
@@ -599,7 +602,7 @@ def add_api_case_step(request):
             case_step_obj = API_test_case_step(order=step_order, status=status,step_type=step_type,op_object=op_object, object_id=object_id,exec_operation=exec_operation,
                                     request_header=request_header, request_method=request_method, url_or_sql=url_or_sql, input_params=input_params,
                                     response_to_check=response_to_check,check_rule=check_rule,check_pattern=check_pattern, output_params=output_params,
-                                    protocol=protocol, host=host, port=port, run_times=run_times, try_for_failure=try_for_failure, case_id=case_id)
+                                    protocol=protocol, host=host, port=port, run_times=run_times, try_for_failure=try_for_failure, retry_frequency=retry_frequency, case_id=case_id)
 
             case_step_obj.save()
         else: #表明是插入
@@ -614,7 +617,7 @@ def add_api_case_step(request):
                     case_step_obj = API_test_case_step(order=step_order, status=status,step_type=step_type,op_object=op_object, object_id=object_id,exec_operation=exec_operation,
                                             request_header=request_header, request_method=request_method, url_or_sql=url_or_sql, input_params=input_params,
                                             response_to_check=response_to_check,check_rule=check_rule,check_pattern=check_pattern, output_params=output_params,
-                                            protocol=protocol, host=host, port=port, run_times=run_times, try_for_failure=try_for_failure, case_id=case_id)
+                                            protocol=protocol, host=host, port=port, run_times=run_times, try_for_failure=try_for_failure, retry_frequency=retry_frequency, case_id=case_id)
 
                     case_step_obj.save()
             except Exception as e:
@@ -674,7 +677,7 @@ def update_ui_case_step(request):
         ui_case_step_obj.try_for_failure = try_for_failure
         ui_case_step_obj.page_name = page_name
 
-        if object_id != '-1':
+        if object_id:
             ui_case_step_obj.object_id = object_id
         ui_case_step_obj.save()
         return  HttpResponse('success')
@@ -725,6 +728,8 @@ def update_api_case_step(request):
         port = params['port'].strip()
         run_times = params['run_times'].strip()
         try_for_failure = params['try_for_failure'].strip()
+        retry_frequency = params['retry_frequency'].strip()
+
 
         if step_type == '':
             return  HttpResponse('保存失败，对象类型不能为空')
@@ -740,6 +745,8 @@ def update_api_case_step(request):
             return HttpResponse('保存失败，运行次数只能为数字')
         if not try_for_failure.isdigit() and try_for_failure !=  '':
             return HttpResponse('保存失败，失败重试次数只能为数字')
+        if not retry_frequency.isdigit() and retry_frequency !=  '':
+            return HttpResponse('保存失败，重试频率只能为数字')
 
         if run_times == '':
             run_times = '1'
@@ -773,9 +780,9 @@ def update_api_case_step(request):
         case_step_obj.port = port
         case_step_obj.run_times = run_times
         case_step_obj.try_for_failure = try_for_failure
+        case_step_obj.retry_frequency = retry_frequency
 
-        if object_id != '-1':
-            case_step_obj.object_id = object_id
+        case_step_obj.object_id = object_id
         case_step_obj.save()
         return  HttpResponse('success')
     except Exception as e:

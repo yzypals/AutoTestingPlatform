@@ -9,14 +9,13 @@ from test_plan import TestPlan
 
 
 class TestProject:
-    def __init__(self, project_id, project_name, protocol, host, port, global_headers, environment, plan_id_list):
+    def __init__(self, project_id, project_name, protocol, host, port, global_headers, plan_id_list):
         self.project_id = project_id
         self.project_name = project_name
         self.protocol = protocol
         self.host = host
         self.port = port
         self.global_headers = global_headers
-        self.environment = environment
         self.plan_id_list = plan_id_list
 
     def sync_case_tree_node_info_for_testplans(self):

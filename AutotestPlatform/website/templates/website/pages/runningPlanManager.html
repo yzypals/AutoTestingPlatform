@@ -4,16 +4,16 @@
     <meta charset="UTF-8">
     {% load staticfiles %}
     <!--引入JQuery-->
-    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery-3.2.1.min.js' %}"></script> 
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery-3.2.1.min.js' %}"></script>
     <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery.easyui.min.js' %}"></script>
-    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery.min.js' %}"></script>      
-    <script type="text/javascript" src="{% static 'website/js/common.js' %}"></script>    
-    <script type="text/javascript" src="{% static 'website/jquery-easyui/locale/easyui-lang-zh_CN.js' %}"></script> 
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'website/js/common.js' %}"></script>
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/locale/easyui-lang-zh_CN.js' %}"></script>
     <link rel="stylesheet" type="text/css" href="{% static  'website/jquery-easyui/themes/default/easyui.css' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'website/jquery-easyui/themes/icon.css' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'website/jquery-easyui/demo/demo.css' %}">
     <script>
-   
+
         var ifInsert = undefined; // 用于标记行是否是新增还是修改
         var editIndex = undefined;     // 用于存储正在编辑行的索引
         var ID = undefined;     // 存放行自增ID
@@ -21,9 +21,9 @@
         // 用于存储记录行中处于编辑，还未保存的值
         var running_plan_name  = undefined; // 运行计划名称
         var project_type = undefined;      // 项目类型
-        var project_id = -1;              // 项目id
+        var project_id = null;              // 项目id
         var project_name = undefined;      // 项目名称
-        var plan_id_list = undefined;           // 用于存储计划id
+        var plan_id_list = [];           // 用于存储计划id
         var plan_name = undefined;         // 计划名称
         var script_dirpath = undefined;  // 自动化脚本所在父级目录
         var python_path = undefined;     // python程序安装目录
@@ -38,17 +38,17 @@
             $('.editRowBtn').linkbutton({text:'修改', plain:true, iconCls:'icon-edit'});
             $('.deleteRowBtn').linkbutton({text:'删除', plain:true, iconCls:'icon-remove'});
             $('.moveUpBtn').linkbutton({text:'上移', plain:true, iconCls:'icon-edit'});
-            $('.moveDownBtn').linkbutton({text:'下移', plain:true, iconCls:'icon-edit'}); 
+            $('.moveDownBtn').linkbutton({text:'下移', plain:true, iconCls:'icon-edit'});
 
             $('.saveRowBtn').hide();
-            $('.cancelEditRowBtn').hide(); 
+            $('.cancelEditRowBtn').hide();
 
             editIndex = undefined;
             // 设置自动调整行高(主要是解决行号所在单元格和数据行错位问题)
             $('#Running_plan').datagrid('fixRowHeight');
         }
 
-  
+
         // 格式化【操作】列
         function formatOperationColumn(value,row,index){
             var btn = "<a id='resetBtn" + index + "' class='resetBtn' onclick='resetRunningPlanStatus(" + JSON.stringify(row) + "," +index+")' href='javascript:void(0)'>重置状态</a> \
@@ -62,10 +62,10 @@
                     <a id='saveRowBtn" + index + "' class='saveRowBtn' onclick='saveRow()' \
                      href='javascript:void(0)' style='display:none'>保存</a>\
                     <a id='cancelEditRowBtn" + index + "' class='cancelEditRowBtn' onclick='cancelEditRow(this)' \
-                    href='javascript:void(0)' style='display:none'>取消</a>"; 
+                    href='javascript:void(0)' style='display:none'>取消</a>";
             return btn;
         }
-        
+
 
         // 编辑时隐藏部分按钮
         function hideNoneEditBtn(editIndex) {
@@ -76,7 +76,7 @@
             $('#moveDownBtn' + editIndex).hide();
             $('#resetBtn' + editIndex).hide();
             $('#runBtn' + editIndex).hide();
-            $('#viewReportBtn' + editIndex).hide();           
+            $('#viewReportBtn' + editIndex).hide();
             $('.saveRowBtn').linkbutton({text:'保存', plain:true, iconCls:'icon-ok'});
             $('.cancelEditRowBtn').linkbutton({text:'取消', plain:true, iconCls:'icon-cancel'});
             $('#saveRowBtn' + editIndex).show();
@@ -84,65 +84,105 @@
         }
 
         // 点击表格“插入|新增”按钮事件函数实现
-        function insertRow(row, rowIndex) { 
-            if (endEditing()) { 
-               if (rowIndex == undefined) { // 点击 新增 按钮
-                    editIndex = 0; 
+        function insertRow(row, rowIndex) {
+            if (endEditing()) {
+                if (rowIndex == undefined) { // 点击 新增 按钮
+                    editIndex = 0;
                     order = '';
                 } else { // 点击 插入 按钮
                     editIndex = rowIndex + 1;
                     order = row.order
-                }     
-                                
-            
+                }
+
+
                 $('#Running_plan').datagrid('insertRow',{
-                    index: editIndex, 
+                    index: editIndex,
                     row: { }
                 });
 
                 hideNoneEditBtn(editIndex);
-            
+
                 $('#Running_plan').datagrid('unselectAll');
                 var row = $('#Running_plan').datagrid('selectRow', editIndex);
                 $(row).datagrid('beginEdit', editIndex);
-               
-                // // 设置项目类型，默认为 UI项目
-                $(row).datagrid('getEditor', {index: editIndex, field: 'project_type'}).target.combobox('setValue', 'UI项目');
 
-                // 初始化项目 combobbox 下拉列表值
-                initDataForCombobox('UI项目', '新增');
+                // 初始化行组件值
+                initDataForRowComponets('API项目', '新增');
                 ifInsert = true;
-            }                
+            }
         }
-      
-        function initDataForCombobox(projectType, flag) {
-            var projectEditor =  $('#Running_plan').datagrid('getEditor', {index: editIndex, field: 'project_name'});
-            
-            // 初始化项目combobox下拉列表
+
+        function initDataForRowComponets(projectType, opType, projectIDList, planIDList, projectID, planName) {
+            var projectNameEditor =  $('#Running_plan').datagrid('getEditor', {index: editIndex, field: 'project_name'});
+            var validFlagEditor = $('#Running_plan').datagrid('getEditor', {index: editIndex, field: 'valid_flag'});
+            var planNameEditor = $('#Running_plan').datagrid('getEditor', {index: editIndex, field: 'plan_name'});
+            var defaultProjectType = projectType;
             if (projectType == 'UI项目') {
                 projectType = 'UIProject';
             } else if(projectType == 'API项目'){
                 projectType = 'APIProject';
+            } else if(projectType == '所有项目'){
+                projectType = 'ALLProject';
+            } else {
+                return;
             }
 
-            getProjects(projectType).then(function(jsonData) { 
-                if (jsonData['result'] == 'success') {
-                    if(flag == '新增' || flag == '切换项目类型') {
-                        $(projectEditor.target).combobox('clear');
-                        $(projectEditor.target).combobox('loadData', {'id':0, 'choice':''});
-                    }
-                    $(projectEditor.target).combobox('loadData', jsonData['data']);
-                } else {
-                    $.messager.alert('错误信息', '获取项目失败：' + jsonData['data'], 'error');                 
-                }
-            });
+            // 加载是否启用计划
+            $(validFlagEditor.target).combobox('loadData',[{'id':'0','choice':'禁用'},{'id':'1','choice':'启用'}]);
 
-            // 请求是否启用计划
-            var validFlagEditor = $('#Running_plan').datagrid('getEditor', {index: editIndex, field:'valid_flag'});
-            if($(validFlagEditor.target).combobox('getText') == '') { // 设置默认启用计划
+
+            if (opType == '新增') {
+                // 设置默认项目类型
+                var projectTypeEditor =  $('#Running_plan').datagrid('getEditor', {index: editIndex, field: 'project_type'});
+                $(projectTypeEditor.target).combobox('setText', defaultProjectType);
+
+                // 设置默认启用计划
                 $(validFlagEditor.target).combobox('setText', '启用');
-            } 
 
+                // 请求项目名称下拉列表数据
+                getProjects(projectType).then(function(jsonData) {
+                    if (jsonData['result'] == 'success') {
+                        $(projectNameEditor.target).combobox('loadData', jsonData['data']);
+                    } else {
+                        $.messager.alert('错误信息', '获取项目失败：' + jsonData['data'], 'error');
+                    }
+                });
+            } else if (opType == '修改') {
+                // 做这一步是为了让项目名称已选文本值和下拉列表中的选项关联
+                $(projectNameEditor.target).combobox('setValues', projectIDList);
+
+                // 请求项目名称下拉列表数据
+                getProjects(projectType).then(function(jsonData) {
+                    if (jsonData['result'] == 'success') {
+                        $(projectNameEditor.target).combobox('loadData', jsonData['data']);
+
+                        // 必须等待获取项目成功后才进行以下操作，否则可能因为异步请求，清空下述操作的结果
+                        getPlans(projectType, projectID).then(function(jsonData) {
+                            if (jsonData['result'] == 'success') {
+                                 $(planNameEditor.target).combobox('setText', planName);
+                                 $(planNameEditor.target).combobox('loadData', jsonData['data']);
+                                 $(planNameEditor.target).combobox('setValues', planIDList);
+                            } else {
+                                $.messager.alert('错误信息', '获取计划名称失败：' + jsonData['data'], 'error');
+                            }
+                        });
+
+                    } else {
+                        $.messager.alert('错误信息', '获取项目失败：' + jsonData['data'], 'error');
+                    }
+                });
+            } else if (opType == '切换项目类型') {
+                getProjects(projectType).then(function(jsonData) {
+                    if (jsonData['result'] == 'success') {
+                        $(projectNameEditor.target).combobox('clear');
+                        {#                            $(projectEditor.target).combobox('loadData', {'id':0, 'choice':''});#}
+
+                        $(projectNameEditor.target).combobox('loadData', jsonData['data']);
+                    } else {
+                        $.messager.alert('错误信息', '获取项目失败：' + jsonData['data'], 'error');
+                    }
+                });
+            }
         }
 
         // 点击 保存 按钮的函数实现
@@ -150,35 +190,34 @@
             if (editIndex == undefined) {
                 $.messager.alert('提示', '操作失败，没有正在编辑的记录', 'info');
                 return;
-            } 
+            }
             if ($('#Running_plan').datagrid('validateRow', editIndex)){
                 $('#Running_plan').datagrid('endEdit', editIndex);
 
                 var isValid = true;
                 if (project_name == '') {
                     $.messager.alert('提示','保存失败，项目名称不能为空', 'warnging');
-                    isValid = false;      
+                    isValid = false;
                 } else if (plan_name == '') {
                     $.messager.alert('提示','保存失败，计划名称不能为空', 'warnging');
-                    isValid = false;      
+                    isValid = false;
                 } else if (script_dirpath == '') {
                     $.messager.alert('提示','保存失败，自动化脚本所在父级目录绝对路径不能为空', 'warnging');
-                    isValid = false;                   
+                    isValid = false;
                 } else if (python_path == '') {
                     $.messager.alert('提示','保存失败，python安装目录不能为空', 'warnging');
-                    isValid = false;                  
-                } 
-                
+                    isValid = false;
+                }
+
                 if (!isValid) {
                     ifInsert = undefined;
                     editIndex = undefined;
                     onLoadSuccess();
                     $('#Running_plan').datagrid('reload');
-                    return;                   
+                    return;
                 }
 
-                plan_id_list = plan_id_list.toString() + ',';
-
+                plan_id_list = plan_id_list.toString();
                 if (ifInsert == true) { // 新增
                     var url = '/action/addRunningPlan';
                     var params = {
@@ -198,6 +237,11 @@
                     var params = {
                         id:ID,
                         running_plan_name:running_plan_name,
+                        project_type:project_type,
+                        project_id:project_id,
+                        project_name:project_name,
+                        plan_id:plan_id_list,
+                        plan_name:plan_name,
                         script_dirpath:script_dirpath,
                         python_path:python_path,
                         valid_flag:valid_flag
@@ -205,23 +249,23 @@
                 }
 
                 $.post(url, params, function(data,status){
-                        if (data == 'success') {
-                            $.messager.alert('提示','保存成功', 'info');
-                        } else {
-                            $.messager.alert('错误', data, 'error');
+                            if (data == 'success') {
+                                $.messager.alert('提示','保存成功', 'info');
+                            } else {
+                                $.messager.alert('错误', data, 'error');
+                            }
+                            $('#Running_plan').datagrid('reload');
                         }
-                        $('#Running_plan').datagrid('reload');        
-                    }
-                ); 
+                );
             } else {
                 $.messager.alert('告警', '保存失败,请检查是否设置必填(必选)项', 'error');
                 $('#Running_plan').datagrid('reload');
             }
 
             ifInsert = undefined;
-            editIndex = undefined; 
-            plan_id_list = undefined;
-            project_id = -1;
+            editIndex = undefined;
+            plan_id_list = [];
+            project_id = null;
             onLoadSuccess();
         }
 
@@ -230,15 +274,15 @@
             if (editIndex == undefined) {
                 $.messager.alert('提示', '操作失败，没有正在编辑的记录', 'info');
                 return;
-            } 
-            $('#Running_plan').datagrid('endEdit', editIndex);             
+            }
+            $('#Running_plan').datagrid('endEdit', editIndex);
             $('#Running_plan').datagrid('reload', editIndex);
-         
+
             ifInsert = undefined;
             editIndex = undefined;
-            onLoadSuccess();                       
+            onLoadSuccess();
         }
- 
+
         // 结束编辑
         function endEditing(){
             if (editIndex == undefined) {
@@ -256,20 +300,20 @@
             project_type = $(this).datagrid('getEditor', {index: index,field: 'project_type'}).target.combobox('getText');
             project_name = $(this).datagrid('getEditor', {index: index,field: 'project_name'}).target.combobox('getText');
             plan_name = $(this).datagrid('getEditor', {index: index,field: 'plan_name'}).target.combobox('getText');
-            script_dirpath = $(this).datagrid('getEditor', {index: index, field:'script_dirpath'}).target.val();    
-            python_path =  $(this).datagrid('getEditor', {index: index, field:'python_path'}).target.val();   
-            valid_flag = $(this).datagrid('getEditor', {index: index,field: 'valid_flag'}).target.combobox('getText'); 
+            script_dirpath = $(this).datagrid('getEditor', {index: index, field:'script_dirpath'}).target.val();
+            python_path =  $(this).datagrid('getEditor', {index: index, field:'python_path'}).target.val();
+            valid_flag = $(this).datagrid('getEditor', {index: index,field: 'valid_flag'}).target.combobox('getText');
         }
 
         // 点击表格 修改 按钮的函数实现
         function editRow(rowID, index){
-            if (endEditing()) { 
+            if (endEditing()) {
                 if (index == undefined) { // 点击表格上方的 修改 按钮
                     //获取选中行的数据  
                     var rowsChecked = $('#Running_plan').datagrid('getChecked');
                     if (rowsChecked.length < 1) {  //如果没有选中行，提示信息  
-                        $.messager.alert("提示消息", "请选择要修改的记录！", 'info');  
-                        return;  
+                        $.messager.alert("提示消息", "请选择要修改的记录！", 'info');
+                        return;
                     } else if (rowsChecked.length > 1) {
                         $.messager.alert("提示信息", "每次只能选择一条记录！", 'info');
                         return;
@@ -281,50 +325,42 @@
                     editIndex = index;
                 }
 
-                hideNoneEditBtn(editIndex);  
-                
+                hideNoneEditBtn(editIndex);
+
                 $('#Running_plan').datagrid('unselectAll');
                 var row = $('#Running_plan').datagrid('selectRow', editIndex);
                 $(row).datagrid('beginEdit', editIndex);
 
                 // 禁用项目类型，项目名称，计划名称 combobox
-                var projectTypeEditor = $('#Running_plan').datagrid('getEditor', {index: editIndex, field:'project_type'});
-                projectTypeEditor.target.combobox('disable');
+                var projectType = rowsChecked[0].project_type;
+                var projectIDList = rowsChecked[0].project_id.toString().split(',');
+                var projectID = rowsChecked[0].project_id;
+                var planIDList = rowsChecked[0].plan_id.split(',');
+                var planName = rowsChecked[0].plan_name;
 
-                var projectNameEditor = $('#Running_plan').datagrid('getEditor', {index: editIndex, field:'project_name'});
-                projectNameEditor.target.combobox('disable');
+                initDataForRowComponets(projectType, '修改', projectIDList, planIDList, projectID, planName)
 
-                var planNameEditor = $('#Running_plan').datagrid('getEditor', {index: editIndex, field:'plan_name'});
-                planNameEditor.target.combobox("disable");
-
-                // 请求是否启用计划
-                var validFlagEditor = $('#Running_plan').datagrid('getEditor', {index: editIndex, field:'valid_flag'});
-                if($(validFlagEditor.target).combobox('getText') == '') { // 设置默认启用计划
-                    $(validFlagEditor.target).combobox('setText', '启用');
-                } 
-
-                ifInsert = false;              
-            }  
+                ifInsert = false;
+            }
         }
-            
-         //选择项目名称下拉列表项时触发事件
+
+        //选择项目名称下拉列表项时触发事件
         function onSelectForProjectTypeCombobox(row){
-            project_type = row.choice;
-            if (project_type == '') { //通过这个判断，控制初始化顺序带来的字段不识别问题
+            var projectType = row.choice;
+            if (projectType == '') { //通过这个判断，控制初始化顺序带来的字段不识别问题
                 return;
             }
             // 初始化项目combobox下拉列表// 暂时不管是UI项目还是API项目，统一从UI项目配置表中读取
-            initDataForCombobox(project_type, '切换项目类型'); 
-        }  
+            initDataForRowComponets(projectType, '切换项目类型');
+        }
 
         //选择项目名称下拉列表项时触发事件
         function onSelectForProjectCombobox(row) {
             project_id = row.id;
-            project_name = row.choice
 
             var planEditor =  $('#Running_plan').datagrid('getEditor', {index: editIndex, field: 'plan_name'});
             var projectType =  $('#Running_plan').datagrid('getEditor', {index: editIndex, field: 'project_type'}).target.combobox('getText');
-            
+
             // 初始化项目combobox下拉列表
             if (projectType == 'UI项目') {
                 projectType = 'UIProject';
@@ -332,38 +368,54 @@
                 projectType = 'APIProject';
             }
 
-            getPlans(projectType, project_id).then(function(jsonData) { 
+            getPlans(projectType, project_id).then(function(jsonData) {
                 if (jsonData['result'] == 'success') {
                     $(planEditor.target).combobox('clear');
                     $(planEditor.target).combobox('loadData', jsonData['data']);
                 } else {
-                    $.messager.alert('错误信息', '获取计划名称失败：' + jsonData['data'], 'error');                 
+                    $.messager.alert('错误信息', '获取计划名称失败：' + jsonData['data'], 'error');
                 }
             });
 
-        }    
-
-        //取消选择计划名称下拉列表项时触发事件
-        function onUnselectForPlanCombobox(row) {
-            // 不知道为啥，收起下拉列表时也会自动调用该函数，导致plan_id_list为空
-            // var index = plan_id_list.indexOf(row.id.toString());
-            // if(index != -1) {
-            //     plan_id_list.splice(index, 1);
-            // }
         }
 
-        //选择计划名称下拉列表项时触发事件
+
+        // 收起 计划名称 下拉列表框时触发的事件
+        function onHidePanelForProjectCombobox(){
+            // 设置commbox输入框的文本值
+            var projectNameEditor = $('#Running_plan').datagrid('getEditor', {index: editIndex, field:'project_name'});
+            $(projectNameEditor.target).combobox('setValue', project_id.toString().split(','));
+        }
+
+
+        // 下拉点选计划名称列表选项时触发的事件
         function onSelectForPlanCombobox(row) {
+            var index = plan_id_list.indexOf(row.id);
+
+            // 如果不存在，则添加记录id属性值到数组，否则移除数组
+            if(index != -1) {
+                plan_id_list.splice(index, 1);
+            } else {
+                plan_id_list.push(row.id);
+            }
+        }
+
+        //取消计划名称列表项时触发事件
+        function onUnselectForPlanCombobox(row) {
+            var index = plan_id_list.indexOf(row.id.toString());
+            if(index != -1) { // 如果被取消项的id值存在数组中，则移除对应id
+                plan_id_list.splice(index, 1);
+            }
+        }
+
+        // 收起 计划名称 下拉列表框时触发的事件
+        function onHidePanelForPlanCombobox(){
+            // 设置commbox输入框的文本值
+            var planNameEditor = $('#Running_plan').datagrid('getEditor', {index: editIndex, field:'plan_name'});
+            $(planNameEditor.target).combobox('setValue', plan_id_list);
         }
 
 
-        function onChangeForPlanCombobox(newValue, oldValue) {
-            textChanged = true;
-            plan_id_list = oldValue;  // 注意，收起下拉列表时,因为自动调用了common.js中的onHidePanelForCombobox函数，执行了$(this).combobox('clear');函数，
-            // 这会触发一个动作： 会自动设置newValue为[],oldValue设置为最新的值
-            // 注意收起下拉列表时，这里oldValue可能和下拉输入框的值不一样，所以需要在onHidePanel中特殊处理
-        }
-                
         // 本地执行运行计划
         function execRunningPlan(row, index) {
             if (row.running_status == '执行中') {
@@ -373,7 +425,7 @@
             var runningPlanNum = row.running_plan_num;
             var scriptDirpath = row.script_dirpath;
             var pythonPath = row.python_path
-            
+
             $.ajax({
                 type: "POST",
                 url:"/action/execRunningPlan",
@@ -381,13 +433,13 @@
                 data:JSON.stringify({"runningPlanNum":runningPlanNum, "scriptDirpath":scriptDirpath, "pythonPath":pythonPath}),
                 sync: false,
                 success: function(data){
-                    $.messager.alert('提示', data, 'info');   
-                    $('#Running_plan').datagrid('reload');                
+                    $.messager.alert('提示', data, 'info');
+                    $('#Running_plan').datagrid('reload');
                 },
                 error: function(data){
                     $.messager.alert('提示', '执行出错，错误码：' + data.status, 'info');
                 }
-            });    
+            });
             // $.post('/action/execRunningPlan', {runningPlanNum:runningPlanNum, scriptDirpath:scriptDirpath, pythonPath:pythonPath}, function(data, status) {
             //         $.messager.alert('提示', data, 'info');
             //         $('#Running_plan').datagrid('reload');
@@ -400,18 +452,18 @@
             var runningPlanNum = row.running_plan_num;
             //$.messager.alert('提示', '请求成功，正在执行', 'info');
             $.post('/action/resetRunningPlanStatus', {runningPlanNum:runningPlanNum}, function(data, status) {
-                    $.messager.alert('提示', data, 'info');
-                    $('#Running_plan').datagrid('reload');
-                } 
+                        $.messager.alert('提示', data, 'info');
+                        $('#Running_plan').datagrid('reload');
+                    }
             );
         }
     </script>
 </head>
 
 <body class="easyui-layout">
-    <div data-options="region:'center'" title="">
-        <table class="easyui-datagrid" rownumbers="true" pagination="true" id="Running_plan"
-            data-options="border:false,
+<div data-options="region:'center'" title="">
+    <table class="easyui-datagrid" rownumbers="true" pagination="true" id="Running_plan"
+           data-options="border:false,
                 singleSelect:false,
                 fit:true,
                 collapsible: true,
@@ -424,14 +476,14 @@
                 method: 'get',
                 onEndEdit:onEndEdit,
                 onLoadSuccess:onLoadSuccess">
-                <thead>
-                    <tr>
-                        <th data-options="field:'ck',checkbox:true, fitColumns:true"></th>
-                        <th data-options="field:'id', align: 'center', fitColumns:true">ID</th>
-                        <th data-options="field:'running_plan_num', align: 'center', fitColumns:true">运行计划编码</th>
-                        <th data-options="field:'running_plan_name', align: 'left', editor:{type:'text'}" width="250px">运行计划名称</th>
-                        <th data-options="field:'project_id', align: 'center', fitColumns:true, hidden:true">项目ID</th>
-                        <th data-options="field:'project_type', align: 'center', editor:{
+        <thead>
+        <tr>
+            <th data-options="field:'ck',checkbox:true, fitColumns:true"></th>
+            <th data-options="field:'id', align: 'center', fitColumns:true">ID</th>
+            <th data-options="field:'running_plan_num', align: 'center', fitColumns:true">运行计划编码</th>
+            <th data-options="field:'running_plan_name', align: 'left', editor:{type:'text'}" width="250px">运行计划名称</th>
+            <th data-options="field:'project_id', align: 'center', fitColumns:true, hidden:true">项目ID</th>
+            <th data-options="field:'project_type', align: 'center', editor:{
                             type:'combobox',
                             options:{
                                 valueField:'id',
@@ -442,7 +494,7 @@
                                 data:[{id:1, choice:'UI项目'},{id:2, choice:'API项目'}],
                                 onSelect: onSelectForProjectTypeCombobox
                             }}" width="70px">项目类型</th>
-                        <th data-options="field:'project_name', align: 'left', editor:{
+            <th data-options="field:'project_name', align: 'left', editor:{
                             type:'combobox',
                             options:{
                                 valueField:'id',
@@ -450,12 +502,11 @@
                                 required:true,
                                 editable:true,
                                 panelHeight:'auto',
-                                onSelect:onSelectForProjectCombobox,
-                                onHidePanel:onHidePanelForCombobox,
-                                onChange:onChangeForCombobox
-                            }}" width="300px">项目名称</th>    
-                        <th data-options="field:'plan_id', align: 'center', fitColumns:true, hidden:true">计划ID</th>
-                        <th data-options="field:'plan_name', align: 'left', editor:{
+                                onSelect: onSelectForProjectCombobox,
+                                onHidePanel:onHidePanelForProjectCombobox,
+                            }}" width="300px">项目名称</th>
+            <th data-options="field:'plan_id', align: 'center', fitColumns:true, hidden:true">计划ID</th>
+            <th data-options="field:'plan_name', align: 'left', editor:{
                             type:'combobox',
                             options:{
                                 valueField:'id',
@@ -464,14 +515,13 @@
                                 editable:true,
                                 multiple:'true',
                                 panelHeight:'auto',
+                                onSelect: onSelectForPlanCombobox,
                                 onUnselect:onUnselectForPlanCombobox,
-                                onSelect:onSelectForPlanCombobox,
-                                onHidePanel:onHidePanelForCombobox,
-                                onChange:onChangeForPlanCombobox
+                                onHidePanel:onHidePanelForPlanCombobox,
                             }}" width="400px">计划名称</th>
-                        <th data-options="field:'script_dirpath', align: 'left', editor:{type:'text'}" width="400px">自动化脚本所在父级目录绝对路径</th>
-                        <th data-options="field:'python_path', align: 'left', editor:{type:'text'}" width="300px">Python.exe程序绝对路径</th>
-                        <th data-options="field:'valid_flag', align: 'center',fitColumns:true, editor:{
+            <th data-options="field:'script_dirpath', align: 'left', editor:{type:'text'}" width="400px">自动化脚本所在父级目录绝对路径</th>
+            <th data-options="field:'python_path', align: 'left', editor:{type:'text'}" width="300px">Python.exe程序绝对路径</th>
+            <th data-options="field:'valid_flag', align: 'center',fitColumns:true, editor:{
                             type:'combobox',
                             options:{
                                 valueField:'id',
@@ -481,19 +531,19 @@
                                 panelHeight:'auto',
                                 editable:false
                             }}">是否启用</th>
-                        <th data-options="field:'running_status', align: 'left'" width="60px">运行状态</th>
-                        <th data-options="field:'remark', align: 'left'" width="150px">失败原因备注</th>
-                        <th data-options="field:'operations', title:'操作', align: 'center',
-                        formatter:function(value,row,index){return formatOperationColumn(value,row,index);}"  
-                         width="450px">操作</th>              
-                    </tr>
-                </thead>  
-        </table>
-    </div>
-    <!--增加工具条-->
-    <script type="text/javascript">
-        // 定义工具栏
-        var toolbar = addToolbar('Running_plan'); 
-    </script>
+            <th data-options="field:'running_status', align: 'left'" width="60px">运行状态</th>
+            <th data-options="field:'remark', align: 'left'" width="150px">失败原因备注</th>
+            <th data-options="field:'operations', title:'操作', align: 'center',
+                        formatter:function(value,row,index){return formatOperationColumn(value,row,index);}"
+                width="450px">操作</th>
+        </tr>
+        </thead>
+    </table>
+</div>
+<!--增加工具条-->
+<script type="text/javascript">
+    // 定义工具栏
+    var toolbar = addToolbar('Running_plan');
+</script>
 </body>
 </html>

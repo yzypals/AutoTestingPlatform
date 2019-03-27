@@ -22,15 +22,15 @@ class Debug:
     def run(self, project_id, id, browser):
         try:
             logger.info('正在查询项目[ID：%s]相关信息' % project_id)
-            result = test_platform_db.select_one_record('SELECT home_page, environment, valid_flag '
+            result = test_platform_db.select_one_record('SELECT home_page, environment_id, valid_flag '
                                                         'FROM `website_ui_project_setting` WHERE id = %s', (project_id,))
             if result[0] and result[1]:
-                home_page, environment, valid_flag = result[1]
+                home_page, environment_id, valid_flag = result[1]
 
                 logger.info('正在查询与项目关联的数据库信息')
                 result = test_platform_db.select_many_record("SELECT db_type, db_alias, db_name, db_host, db_port, db_user, db_passwd "
                                                              "FROM `website_database_setting` "
-                                                             "WHERE  locate('UI%s', project_id) != 0  AND environment= '%s'" % (project_id, environment))
+                                                             "WHERE  locate('UI%s', project_id) != 0  AND environment_id= '%s'" % (project_id, environment_id))
 
                 if result[0] and result[1]:
                     for record in result[1]:
@@ -45,7 +45,8 @@ class Debug:
                 logger.info('正在查询与项目关联的全局变量')
                 result = test_platform_db.select_many_record("SELECT `name`, `value` "
                                                              "FROM `website_global_variable_setting` "
-                                                             "WHERE project_id = %s AND project_type='UI项目' AND environment= %s", (project_id, environment))
+                                                             "WHERE  project_type='UI项目' AND locate('%s', project_id) != 0 AND locate('%s', env_id) != 0 " % (self.project_id, environment_id))
+
                 if result[0] and result[1]:
                     for record in result[1]:
                         name, value = record

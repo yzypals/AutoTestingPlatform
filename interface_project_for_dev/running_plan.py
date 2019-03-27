@@ -29,15 +29,15 @@ class RunningPlan:
     def run(self, debug):
         try:
             logger.info('正在查询项目[ID：%s,名称：%s]相关信息' % (self.project_id, self.project_name))
-            result = test_platform_db.select_one_record('SELECT protocol, host, port, environment, valid_flag '
+            result = test_platform_db.select_one_record('SELECT protocol, host, port, environment_id, valid_flag '
                                                         'FROM `website_api_project_setting` WHERE id = %s', (self.project_id,))
             if result[0] and result[1]:
-                protocol, host, port, environment, valid_flag = result[1]
+                protocol, host, port, environment_id, valid_flag = result[1]
                 if valid_flag  == '启用':
                     logger.info('正在查询与项目关联的数据库信息')
                     result = test_platform_db.select_many_record("SELECT db_type, db_alias, db_name, db_host, db_port, db_user, db_passwd "
                                                                  "FROM `website_database_setting` "
-                                                                 "WHERE  locate('API%s', project_id) != 0 AND environment= '%s'" %  (self.project_id, environment))
+                                                                 "WHERE locate('API%s', project_id) != 0 AND environment_id= '%s'" %  (self.project_id, environment_id))
                     if result[0] and result[1]:
                         for record in result[1]:
                             db_type, db_alias, db_name, db_host, db_port, db_user, db_passwd = record
@@ -58,7 +58,7 @@ class RunningPlan:
                     logger.info('正在查询与项目关联的全局变量')
                     result = test_platform_db.select_many_record("SELECT `name`, `value` "
                                                                  "FROM `website_global_variable_setting` "
-                                                                 "WHERE project_id = %s AND project_type='API项目' AND environment= %s", (self.project_id, environment))
+                                                                 "WHERE  project_type='API项目' AND locate('%s', project_id) != 0 AND locate('%s', env_id) != 0 ", (self.project_id, environment_id))
                     if result[0] and result[1]:
                         for record in result[1]:
                             name, value = record
@@ -80,7 +80,7 @@ class RunningPlan:
                         else:
                             global_headers = {}
 
-                        test_project = TestProject(self.project_id, self.project_name, protocol, host, port, global_headers, environment, self.plan_id_list)
+                        test_project = TestProject(self.project_id, self.project_name, protocol, host, port, global_headers, self.plan_id_list)
                         logger.info('======================开始运行测试项目[名称：%s, ID：%s]======================' % (self.project_name, self.project_id))
                         result = test_project.run(debug)
 

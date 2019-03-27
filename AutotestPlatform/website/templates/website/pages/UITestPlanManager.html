@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     {% load staticfiles %}
     <!--引入JQuery-->
-    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery-3.2.1.min.js' %}"></script> 
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery-3.2.1.min.js' %}"></script>
     <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery.easyui.min.js' %}"></script>
-    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery.min.js' %}"></script>      
-    <script type="text/javascript" src="{% static 'website/js/common.js' %}"></script>    
-    <script type="text/javascript" src="{% static 'website/jquery-easyui/locale/easyui-lang-zh_CN.js' %}"></script> 
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'website/js/common.js' %}"></script>
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/locale/easyui-lang-zh_CN.js' %}"></script>
     <link rel="stylesheet" type="text/css" href="{% static  'website/jquery-easyui/themes/default/easyui.css' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'website/jquery-easyui/themes/icon.css' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'website/jquery-easyui/demo/demo.css' %}">
@@ -24,20 +24,21 @@
         var plan_name = undefined;     // 计划名称
         var plan_desc = undefined;      // 计划描述
         var browsers = undefined;  // 运行环境
+        var browser_id_list = []   // 存储运行环境ID
         var valid_flag = undefined; //是否启用
         var order = undefined; // 顺序
         var ifUncheckByCancelBtn = false; //用于判断是否通过点击取消按钮触发的取消行记录复选框
 
         $(document).ready(function() {
             // 初始化项目combobox下拉列表
-            getProjects('UIProject').then(function(jsonData) { 
+            getProjects('UIProject').then(function(jsonData) {
                 if (jsonData['result'] == 'success') {
                     $('#projects').combobox('loadData', jsonData['data']);
                 } else {
-                    $.messager.alert('错误信息', '获取项目失败：' + jsonData['data'], 'error');                 
+                    $.messager.alert('错误信息', '获取项目失败：' + jsonData['data'], 'error');
                 }
             });
-            getProjectChosen('PlanUICaseTree').then(function(jsonData) { 
+            getProjectChosen('PlanUICaseTree').then(function(jsonData) {
                 if (jsonData['result'] == 'success') {
                     // 初始化项目combobox的值，并获取项目ID
                     $('#projects').combobox('setValue', jsonData['data']['projectName']);
@@ -54,15 +55,15 @@
                                 left: e.pageX,
                                 top: e.pageY
                             });
-                        }                       
-                    });    
+                        }
+                    });
                 } else {
-                     $.messager.alert('错误信息', '获取当前项目失败：' + jsonData['data'], 'error');                    
+                    $.messager.alert('错误信息', '获取当前项目失败：' + jsonData['data'], 'error');
                 }
             });
         });
 
-   
+
         function onLoadSuccess(data) {
             // 修改“操作”列的按钮样式
             $('.viewCasesBtn').linkbutton({text:'查看用例', plain:true, iconCls:'icon-add'});
@@ -70,17 +71,17 @@
             $('.editRowBtn').linkbutton({text:'修改', plain:true, iconCls:'icon-edit'});
             $('.deleteRowBtn').linkbutton({text:'删除', plain:true, iconCls:'icon-remove'});
             $('.moveUpBtn').linkbutton({text:'上移', plain:true, iconCls:'icon-edit'});
-            $('.moveDownBtn').linkbutton({text:'下移', plain:true, iconCls:'icon-edit'}); 
+            $('.moveDownBtn').linkbutton({text:'下移', plain:true, iconCls:'icon-edit'});
 
             $('.saveRowBtn').hide();
-            $('.cancelEditRowBtn').hide(); 
+            $('.cancelEditRowBtn').hide();
 
             editIndex = undefined;
             // 设置自动调整行高(主要是解决行号所在单元格和数据行错位问题)
             $('#UI_test_plan').datagrid('fixRowHeight');
         }
 
-  
+
         // 格式化【操作】列
         function formatOperationColumn(value,row,index){
             var btn = "<a id='viewCasesBtn" + index + "' class='viewCasesBtn' onclick='viewTestPlanCases(\"#tabs\", " + row.id +")' href='javascript:void(0)'>查看用例</a> \
@@ -93,10 +94,10 @@
                     <a id='saveRowBtn" + index + "' class='saveRowBtn' onclick='saveRow()' \
                      href='javascript:void(0)' style='display:none'>保存</a>\
                     <a id='cancelEditRowBtn" + index + "' class='cancelEditRowBtn' onclick='cancelEditRow(this)' \
-                    href='javascript:void(0)' style='display:none'>取消</a>"; 
+                    href='javascript:void(0)' style='display:none'>取消</a>";
             return btn;
         }
-        
+
 
         // 编辑时隐藏部分按钮
         function hideNoneEditBtn(editIndex) {
@@ -105,8 +106,8 @@
             $('#deleteRowBtn' + editIndex).hide();
             $('#moveUpBtn' + editIndex).hide();
             $('#moveDownBtn' + editIndex).hide();
-             $('#viewCasesBtn' + editIndex).hide();
-            $('#viewReportBtn' + editIndex).hide();           
+            $('#viewCasesBtn' + editIndex).hide();
+            $('#viewReportBtn' + editIndex).hide();
             $('.saveRowBtn').linkbutton({text:'保存', plain:true, iconCls:'icon-ok'});
             $('.cancelEditRowBtn').linkbutton({text:'取消', plain:true, iconCls:'icon-cancel'});
             $('#saveRowBtn' + editIndex).show();
@@ -114,43 +115,43 @@
         }
 
         // 点击表格“插入|新增”按钮事件函数实现
-        function insertRow(row, rowIndex) { 
-            if (endEditing()) { 
-               if (rowIndex == undefined) { // 点击 新增 按钮
-                    editIndex = 0; 
+        function insertRow(row, rowIndex) {
+            if (endEditing()) {
+                if (rowIndex == undefined) { // 点击 新增 按钮
+                    editIndex = 0;
                     ifInsertByRowAddBtn = false;
                     order = '';
                 } else { // 点击 插入 按钮
                     editIndex = rowIndex + 1;
                     ifInsertByRowAddBtn = true;
                     order = row.order
-                }     
-                                
-            
+                }
+
+
                 $('#UI_test_plan').datagrid('insertRow',{
-                    index: editIndex, 
+                    index: editIndex,
                     row: { }
                 });
 
                 hideNoneEditBtn(editIndex);
-            
+
                 $('#UI_test_plan').datagrid('unselectAll');
                 var row = $('#UI_test_plan').datagrid('selectRow', editIndex);
                 $(row).datagrid('beginEdit', editIndex);
 
                 // 初始化combobox的data
-                initValueForCombobox(editIndex);
+                initValueForRowComponets('新增');
                 ifInsert = true;
-            }                
+            }
         }
-      
+
 
         // 点击 保存 按钮的函数实现
         function saveRow(){
             if (editIndex == undefined) {
                 $.messager.alert('提示', '操作失败，没有正在编辑的记录', 'info');
                 return;
-            } 
+            }
             var is_valid = true;
             if ($('#UI_test_plan').datagrid('validateRow', editIndex)){
                 $('#UI_test_plan').datagrid('endEdit', editIndex);
@@ -160,29 +161,30 @@
                     isValid = false;
                 } else if (plan_name == '') {
                     $.messager.alert('提示','保存失败，计划名称不能为空', 'warnging');
-                    isValid = false;      
+                    isValid = false;
                 } else if (browsers == '' || browsers == []) {
                     $.messager.alert('提示','保存失败，运行环境不能为空', 'warnging');
-                    isValid = false;                    
-                } 
+                    isValid = false;
+                }
 
                 if (!isValid){
                     ifInsert = undefined;
                     editIndex = undefined;
                     onLoadSuccess();
                     $('#UI_test_plan').datagrid('reload');
-                    return;                     
-                } 
- 
-    
+                    return;
+                }
+
+                browser_id_list = browser_id_list.toString();
                 if (ifInsert == true) { // 新增
                     var url = '/action/addUITestPlan';
-                    var params = {   
+                    var params = {
                         project_id:projectID,
                         project_name:projectName,
                         plan_name:plan_name,
                         plan_desc:plan_desc,
                         browsers:browsers,
+                        browser_id:browser_id_list,
                         valid_flag:valid_flag,
                         order:order
                     };
@@ -194,26 +196,28 @@
                         plan_name:plan_name,
                         plan_desc:plan_desc,
                         browsers:browsers,
+                        browser_id:browser_id_list,
                         valid_flag:valid_flag
                     };
                 }
 
                 $.post(url, params, function(data,status){
-                        if (data == 'success') {
-                            $.messager.alert('提示','保存成功', 'info');
-                        } else {
-                            $.messager.alert('错误', data, 'error');
+                            if (data == 'success') {
+                                $.messager.alert('提示','保存成功', 'info');
+                            } else {
+                                $.messager.alert('错误', data, 'error');
+                            }
+                            $('#UI_test_plan').datagrid('reload');
                         }
-                        $('#UI_test_plan').datagrid('reload');        
-                    }
-                ); 
+                );
             } else {
                 $.messager.alert('告警', '保存失败,请检查是否设置必填(必选)项', 'error');
                 $('#UI_test_plan').datagrid('reload');
             }
 
             ifInsert = undefined;
-            editIndex = undefined; 
+            editIndex = undefined;
+            browser_id_list = [];
             ifInsertByRowAddBtn = undefined;
             onLoadSuccess();
         }
@@ -223,16 +227,17 @@
             if (editIndex == undefined) {
                 $.messager.alert('提示', '操作失败，没有正在编辑的记录', 'info');
                 return;
-            } 
-            $('#UI_test_plan').datagrid('endEdit', editIndex);             
+            }
+            $('#UI_test_plan').datagrid('endEdit', editIndex);
             $('#UI_test_plan').datagrid('reload', editIndex);
-         
+
             ifInsert = undefined;
             editIndex = undefined;
+            browser_id_list = [];
             ifUncheckByCancelBtn = true;
-            onLoadSuccess();                       
+            onLoadSuccess();
         }
- 
+
         // 结束编辑
         function endEditing(){
             if (editIndex == undefined) {
@@ -248,19 +253,19 @@
             // 获取单元格中输入的内容
             plan_name = $(this).datagrid('getEditor', {index: index,field: 'plan_name'}).target.val();
             plan_desc = $(this).datagrid('getEditor', {index: index,field: 'plan_desc'}).target.val();
-            browsers = $(this).datagrid('getEditor', {index: index,field: 'browsers'}).target.combobox('getText');    
-            valid_flag = $(this).datagrid('getEditor', {index: index,field: 'valid_flag'}).target.combobox('getText'); 
+            browsers = $(this).datagrid('getEditor', {index: index,field: 'browsers'}).target.combobox('getText');
+            valid_flag = $(this).datagrid('getEditor', {index: index,field: 'valid_flag'}).target.combobox('getText');
         }
 
         // 点击表格 修改 按钮的函数实现
         function editRow(rowID, index){
-            if (endEditing()) { 
+            if (endEditing()) {
                 if (index == undefined) { // 点击表格上方的 修改 按钮
                     //获取选中行的数据  
                     var rowsChecked = $('#UI_test_plan').datagrid('getChecked');
                     if (rowsChecked.length < 1) {  //如果没有选中行，提示信息  
-                        $.messager.alert("提示消息", "请选择要修改的记录！", 'info');  
-                        return;  
+                        $.messager.alert("提示消息", "请选择要修改的记录！", 'info');
+                        return;
                     } else if (rowsChecked.length > 1) {
                         $.messager.alert("提示信息", "每次只能选择一条记录！", 'info');
                         return;
@@ -272,51 +277,61 @@
                     editIndex = index;
                 }
 
-                hideNoneEditBtn(editIndex);  
-                
+                hideNoneEditBtn(editIndex);
+
                 $('#UI_test_plan').datagrid('unselectAll');
                 var row = $('#UI_test_plan').datagrid('selectRow', editIndex);
                 $(row).datagrid('beginEdit', editIndex);
 
-                // 初始化combobox的data
-                initValueForCombobox(editIndex);
 
-                ifInsert = false;              
-            }  
+                var browserIDList = rowsChecked[0].browser_id.toString().split(',');
+                // 初始化行组件的值
+                initValueForRowComponets('修改', browserIDList);
+
+                ifInsert = false;
+            }
         }
-            
-        //新增|修改计划时，初始化Combox data
-        function initValueForCombobox(index) {   
+
+
+        function initValueForRowComponets(opType, browserIDList) {
+            var validFlagEditor = $('#UI_test_plan').datagrid('getEditor', {index: editIndex, field:'valid_flag'});
+            var browsersEditor = $('#UI_test_plan').datagrid('getEditor', {index: editIndex, field:'browsers'});
+            // 加载是否启用计划
+            $(validFlagEditor.target).combobox('loadData',[{'id':'0','choice':'禁用'},{'id':'1','choice':'启用'}]);
+
+            if (opType == '新增') {
+                // 设置默认启用计划
+                $(validFlagEditor.target).combobox('setText', '启用');
+            } else if (opType == '修改') {
+                browsersEditor.target.combobox('setValues', browserIDList);
+            }
+
             // 请求运行环境-浏览器
-            var browsersEditor = $('#UI_test_plan').datagrid('getEditor', {index: index, field:'browsers'});
             $.get('/action/getBrowsersForUITestPlan', function(data,status) {
                 var jsonData = JSON.parse(data);
-                  if (jsonData['result'] == 'success') {
+                if (jsonData['result'] == 'success') {
                     $(browsersEditor.target).combobox('loadData', jsonData['choices']); // 注意这里要用JSON。parse把字符串的data转为json串
                 } else {
                     $.messager.alert('错误信息', '获取运行环境出错' + jsonData['choices'] , 'error');
                 }
-            });   
+            });
 
-            // 请求是否启用计划
-            var validFlagEditor = $('#UI_test_plan').datagrid('getEditor', {index: editIndex, field:'valid_flag'});
-            $(validFlagEditor.target).combobox('loadData',[{'id':'0','choice':'禁用'},{'id':'1','choice':'启用'}]); 
-            if($(validFlagEditor.target).combobox('getText') == '') { // 设置默认启用计划
-                $(validFlagEditor.target).combobox('setText', '启用');
-            }         
-        }   
-         
+
+
+        }
+
         // // 控制点击datagrid表中记录行时，不选中复选框
         // function onBeforeSelect(){
         //    return false;
         // }
-       // 关联测试用例和测试计划
+
+        // 关联测试用例和测试计划
         function correlateTestplanAndTestcase() {
             // 获取要关联的计划
             var rowsChecked = $('#UI_test_plan').datagrid('getChecked');
             if (rowsChecked.length < 1) {  //如果没有选中行，提示信息  
-                $.messager.alert("告警", "请选择要关联的测试计划！", 'warnging');  
-                return;  
+                $.messager.alert("告警", "请选择要关联的测试计划！", 'warnging');
+                return;
             } else if (rowsChecked.length > 1) {
                 $.messager.alert("告警", "每次只能选择一条测试计划！", 'warnging');
                 $('#UI_test_plan').datagrid('uncheckAll');
@@ -328,7 +343,7 @@
             var nodesChecked = $('#tree').tree('getChecked');
             if(nodesChecked.length < 1) {
                 $.messager.alert("告警", "请先选择需要关联的用例！", 'warnging');
-                return;               
+                return;
             }
             var nodeList = []; // 存储nodeInfo字典信息
             var nodeIDList = []; // 存储节点的ID
@@ -340,13 +355,13 @@
                 temp_dic["parentID"] = node.parent_id;
                 temp_dic["subNodeNum"] = node.children.length;
 
-                nodeInfo[node.id] = temp_dic;        
+                nodeInfo[node.id] = temp_dic;
 
                 // 注意，这里需要把字典转为字符串，否则存储的是对象,在post提交时，nodeList被拆分成一个个参数（每个key、value都作为一个post的参数）
                 nodeIDList.push(JSON.stringify(node.id));
             });
             nodeList.push(JSON.stringify(nodeInfo));
-            
+
             var url = '/action/correlateTestplanAndTestcase';
             var params = {
                 planType:'UITestPlan',
@@ -354,16 +369,16 @@
                 //obj.toString把数组对象转为字符串，否则也会被拆分成多个参数（每个元素作为一个post的参数）
                 //nodeList只有单个元素，调用toString()后，为item,多个元素则为item1,item2,添加逗号，方便后端统一处理
                 nodeList:nodeList.toString() + ",",
-                nodeIDList:nodeIDList.toString() + ","  
+                nodeIDList:nodeIDList.toString() + ","
             }
- 
+
             $.post(url, params, function(data,status){
                 if (data == 'success') {
                     $.messager.alert('提示','关联成功', 'info');
                 } else {
                     $.messager.alert('错误', '关联失败' + data, 'error');
-                }                         
-            }); 
+                }
+            });
 
         }
 
@@ -378,24 +393,24 @@
                 });
 
                 // 获取同测试计划关联的节点
-                var planID = rowData.id;      
+                var planID = rowData.id;
                 var url = '/pages/testplanCaseTreeNodes?planType=UITestPlan&planID=' + planID;
                 $.get(url, function(data,status){
                     var jsonData = JSON.parse(data);
-                        if (jsonData['result'] == 'success') {
-                            var nodeIDList = [].concat(jsonData['data']);
-                            if (nodeIDList.length >= 1) { // 获取到用例树节点
-                                $.each(nodeIDList, function(index, nodeID) {
-                                     // 设置勾选关联的用例树节点
-                                     var node = $('#tree').tree('find', nodeID);
-                                     $('#tree').tree('check', node.target);
-                                });
-                            }
-                        } else {
-                            $.messager.alert('错误', '获取测试计划用例树节点失败:' + jsonData['data'], 'error');
-                            return [];
-                        }                         
-                    });
+                    if (jsonData['result'] == 'success') {
+                        var nodeIDList = [].concat(jsonData['data']);
+                        if (nodeIDList.length >= 1) { // 获取到用例树节点
+                            $.each(nodeIDList, function(index, nodeID) {
+                                // 设置勾选关联的用例树节点
+                                var node = $('#tree').tree('find', nodeID);
+                                $('#tree').tree('check', node.target);
+                            });
+                        }
+                    } else {
+                        $.messager.alert('错误', '获取测试计划用例树节点失败:' + jsonData['data'], 'error');
+                        return [];
+                    }
+                });
             }
         }
 
@@ -403,35 +418,35 @@
         // 点击取消勾选测试计划，取消勾选关联的用例树节点
         function onUncheckRow(rowIndex, rowData) {
             //取消勾选未同测试计划关联，但是已勾选的节点 
-            if (!ifUncheckByCancelBtn) {   
+            if (!ifUncheckByCancelBtn) {
                 var nodes = $('#tree').tree('getChecked');
                 $.each(nodes, function(index, node) {
                     $('#tree').tree('uncheck', node.target);
                 });
 
                 // 获取同测试计划关联的节点
-                var planID = rowData.id;      
+                var planID = rowData.id;
                 var url = '/pages/testplanCaseTreeNodes?planType=UITestPlan&planID=' + planID;
                 $.get(url, function(data,status){
                     var jsonData = JSON.parse(data);
-                        if (jsonData['result'] == 'success') {
-                            var nodeIDList = [].concat(jsonData['data']);
-                            if (nodeIDList.length >= 1) { // 获取到用例树节点
-                                $.each(nodeIDList, function(index, nodeID) {
-                                     // 设置取消勾选关联的用例树节点
-                                     var node = $('#tree').tree('find', nodeID);
-                                     $('#tree').tree('uncheck', node.target);
-                                });
-                            }
-                        } else {
-                            $.messager.alert('错误', '获取测试计划用例树节点失败:' + jsonData['data'], 'error');
-                            return [];
-                        }                         
-                    });
+                    if (jsonData['result'] == 'success') {
+                        var nodeIDList = [].concat(jsonData['data']);
+                        if (nodeIDList.length >= 1) { // 获取到用例树节点
+                            $.each(nodeIDList, function(index, nodeID) {
+                                // 设置取消勾选关联的用例树节点
+                                var node = $('#tree').tree('find', nodeID);
+                                $('#tree').tree('uncheck', node.target);
+                            });
+                        }
+                    } else {
+                        $.messager.alert('错误', '获取测试计划用例树节点失败:' + jsonData['data'], 'error');
+                        return [];
+                    }
+                });
             } else {
                 ifUncheckByCancelBtn = false;
             }
-        }  
+        }
 
         // 树形结构上方，项目commbobox onSelect事件处理
         function onSelectComboboxRow(row) {
@@ -447,24 +462,25 @@
                 if(data == 'success') {
                     $('#UI_test_plan').datagrid('reload'); // 请求右侧计划列表  
                     // 请求树
-                    $('#tree').tree({url:'nodeTree?treeType=PlanUICaseTree&projectID=' + projectID});  
+                    $('#tree').tree({url:'nodeTree?treeType=PlanUICaseTree&projectID=' + projectID});
                 } else {
-                    $.messager.alert('提示', '存储计划ID失败', 'error'); 
+                    $.messager.alert('提示', '存储计划ID失败', 'error');
                 }
-            });            
-        } 
+            });
+        }
+
         // 加载之前修改url值，以保持测试计划和项目的对应关系
         function onBeforeLoad(param){
             $('#UI_test_plan').datagrid('options').url = '/action/getUITestPlans?projectID=' + projectID;
-        }           
+        }
 
         // 同测试计划关联的用例
         function viewTestPlanCases(tabsID, planID) {
-            var url = '/pages/UITestPlanCaseView';    
-            var title = '计划' + planID + '-用例明细' 
+            var url = '/pages/UITestPlanCaseView';
+            var title = '计划' + planID + '-用例明细'
             if($(tabsID).tabs('exists', title)){  // 如果tab已存在，则重新加载tab
                 $(tabsID).tabs('select', title);  // 激活tab标签页 
-                var currentTab = $(tabsID).tabs('getSelected');        
+                var currentTab = $(tabsID).tabs('getSelected');
             } else{ //否则，添加tab
                 var iframe='<iframe scrolling="auto" frameborder="0"  src="'+url+'" style="width:100%;height:100%;"></iframe>';
                 $(tabsID).tabs('add',{
@@ -476,28 +492,57 @@
             }
         }
 
-       // 刷新用例树
+        // 刷新用例树
         function treeNodeMenuHandler(item){
-            if (item.text == '刷新') { 
-                try {              
+            if (item.text == '刷新') {
+                try {
                     $('#tree').tree({url:'nodeTree?treeType=PlanUICaseTree&projectID=' + projectID});
                     $.messager.alert('提示', '刷新成功', 'info');
                 } catch (e) {
                     $.messager.alert('提示', '刷新失败', 'info');
-                }     
+                }
             }
         }
+
+        // 下拉点选运行浏览器列表选项时触发的事件
+        function onSelectForBrowserCombobox(row) {
+            var index = browser_id_list.indexOf(row.id2);
+
+            // 如果不存在，则添加记录id属性值到数组，否则移除数组
+            if(index != -1) {
+                browser_id_list.splice(index, 1);
+            } else {
+                browser_id_list.push(row.id);
+            }
+        }
+
+        //取消运行环境列表项时触发事件
+        function onUnselectForBrowserCombobox(row) {
+            var index = browser_id_list.indexOf(row.id.toString());
+            if(index != -1) { // 如果被取消项的id值存在数组中，则移除对应id
+                browser_id_list.splice(index, 1);
+            }
+        }
+
+        // 收起 运行环境 下拉列表框时触发的事件
+        function onHidePanelForBrowserCombobox(row){
+            // 设置commbox输入框的文本值
+            var projectNameEditor = $('#UI_test_plan').datagrid('getEditor', {index: editIndex, field:'browsers'});
+            $(projectNameEditor.target).combobox('setValue', browser_id_list);
+        }
+
+
     </script>
 </head>
 
 <body class="easyui-layout">
-    <div data-options="region:'west',split: true" title="选择用例" style="width: 300px;">
-        <div style="position:absolute; left:0px; top:28px; width:94%; border:solid 1px #D2E0F2; display:block; background-color:white;display:block; text-align: left;">
-            <a id="correlatePlanCaseBtn" class="correlatePlanCaseBtn" onclick="correlateTestplanAndTestcase()" href="javascript:void(0)"></a><span style="font-size:'12px';font-weight:bold">   请下拉选择项目</span>
-            <script>
-                $('#correlatePlanCaseBtn').linkbutton({text:'关联用例', plain:true, iconCls:'icon-save'});
-            </script>
-            <div>
+<div data-options="region:'west',split: true" title="选择用例" style="width: 300px;">
+    <div style="position:absolute; left:0px; top:28px; width:94%; border:solid 1px #D2E0F2; display:block; background-color:white;display:block; text-align: left;">
+        <a id="correlatePlanCaseBtn" class="correlatePlanCaseBtn" onclick="correlateTestplanAndTestcase()" href="javascript:void(0)"></a><span style="font-size:'12px';font-weight:bold">   请下拉选择项目</span>
+        <script>
+            $('#correlatePlanCaseBtn').linkbutton({text:'关联用例', plain:true, iconCls:'icon-save'});
+        </script>
+        <div>
             <input id="projects" class="easyui-combobox" name="projects" style="width:100%;" data-options="
                 valueField: 'id',
                 textField: 'choice',
@@ -506,18 +551,18 @@
                 labelPosition: 'top',
                 onSelect: onSelectComboboxRow
                 ">
-            </div>
         </div>
-        <div style="margin-top: 55px">
-            <ul id="tree" data-options="animate:true,lines:true"></ul> 
-        </div>
-    </div>  
+    </div>
+    <div style="margin-top: 55px">
+        <ul id="tree" data-options="animate:true,lines:true"></ul>
+    </div>
+</div>
 
-    <div data-options="region:'center'" title="计划管理">
-        <div class="easyui-tabs"  id="tabs" data-options="fit:true, border:false, plain:true">
-            <div title="测试计划">
-                <table class="easyui-datagrid" rownumbers="true" pagination="true" id="UI_test_plan"
-                    data-options="border:false,
+<div data-options="region:'center'" title="计划管理">
+    <div class="easyui-tabs"  id="tabs" data-options="fit:true, border:false, plain:true">
+        <div title="测试计划">
+            <table class="easyui-datagrid" rownumbers="true" pagination="true" id="UI_test_plan"
+                   data-options="border:false,
                     singleSelect:false,
                     fit:true,
                     collapsible: true,
@@ -533,15 +578,15 @@
                     onLoadSuccess:onLoadSuccess,
                     onCheck:onCheckRow,
                     onUncheck:onUncheckRow">
-                    <thead>
-                        <tr>
-                            <th data-options="field:'ck',checkbox:true, fitColumns:true"></th>
-                            <th data-options="field:'id', align: 'center', fitColumns:true">计划ID</th>
-                            <th data-options="field:'order', align: 'center', fitColumns:true">顺序</th>
-                            <th data-options="field:'project_name', align: 'left'" width="200px">所属项目</th>  
-                            <th data-options="field:'plan_name', align: 'left', editor:{type:'text'}" width="200px">计划名称</th>
-                            <th data-options="field:'plan_desc', align: 'left', editor:{type:'text'}" width="300px">计划描述</th>
-                            <th data-options="field:'browsers', align:'left',editor:{
+                <thead>
+                <tr>
+                    <th data-options="field:'ck',checkbox:true, fitColumns:true"></th>
+                    <th data-options="field:'id', align: 'center', fitColumns:true">计划ID</th>
+                    <th data-options="field:'order', align: 'center', fitColumns:true">顺序</th>
+                    <th data-options="field:'project_name', align: 'left'" width="200px">所属项目</th>
+                    <th data-options="field:'plan_name', align: 'left', editor:{type:'text'}" width="200px">计划名称</th>
+                    <th data-options="field:'plan_desc', align: 'left', editor:{type:'text'}" width="300px">计划描述</th>
+                    <th data-options="field:'browsers', align:'left',editor:{
                             type:'combobox',
                             options:{
                                 valueField:'id',
@@ -550,10 +595,11 @@
                                 editable:false,
                                 multiple:'true',
                                 panelHeight:'auto',
-                                onHidePanel:onHidePanelForCombobox,
-                                onChange:onChangeForCombobox
-                            }}" width="130px">运行环境</th> 
-                            <th data-options="field:'valid_flag', align: 'center',fitColumns:true, editor:{
+                                onSelect: onSelectForBrowserCombobox,
+                                onUnselect:onUnselectForBrowserCombobox,
+                                onHidePanel:onHidePanelForBrowserCombobox,
+                            }}" width="130px">运行环境</th>
+                    <th data-options="field:'valid_flag', align: 'center',fitColumns:true, editor:{
                             type:'combobox',
                             options:{
                                 valueField:'id',
@@ -563,22 +609,22 @@
                                 panelHeight:'auto',
                                 editable:false
                             }}">是否启用</th>
-                            <th data-options="field:'operations', title:'操作', align: 'center',
-                            formatter:function(value,row,index){return formatOperationColumn(value,row,index);}" width="400px">操作</th>              
-                    </tr>
-                    </thead>  
-                </table>
-            </div>
-
-            <!--增加工具条-->
-            <script type="text/javascript">
-                // 定义工具栏
-                var toolbar = addToolbar('UI_test_plan'); 
-            </script>
+                    <th data-options="field:'operations', title:'操作', align: 'center',
+                            formatter:function(value,row,index){return formatOperationColumn(value,row,index);}" width="400px">操作</th>
+                </tr>
+                </thead>
+            </table>
         </div>
+
+        <!--增加工具条-->
+        <script type="text/javascript">
+            // 定义工具栏
+            var toolbar = addToolbar('UI_test_plan');
+        </script>
     </div>
-    <div id="treeNodeMenu" class="easyui-menu" data-options="onClick:treeNodeMenuHandler">
-        <div data-options="iconCls:'icon-copy'">刷新</div>
-    </div>     
+</div>
+<div id="treeNodeMenu" class="easyui-menu" data-options="onClick:treeNodeMenuHandler">
+    <div data-options="iconCls:'icon-copy'">刷新</div>
+</div>
 </body>
 </html>

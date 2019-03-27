@@ -18,6 +18,7 @@ from website.models import Test_task_overview
 from website.models import Test_task_detail
 from website.models import Promble_feedback
 from website.models import Browser_setting
+from website.models import Env_setting
 from website.models import Database_setting
 from website.models import Function_setting
 from website.models import Operation_for_object
@@ -97,6 +98,24 @@ def store_project_chosen(request):
     finally:
         return HttpResponse(response)
 
+# 获取所属环境
+def get_envs(request):
+    env_list = []
+    try:
+        rows = Env_setting.objects.order_by('order').values()
+        for row in rows:
+            temp_dic = {}
+            temp_dic['id'] = str(row['id'])
+            temp_dic['choice'] = row['env']
+            env_list.append(temp_dic)
+        response = {'result':'success', 'data':env_list}
+    except Exception as e:
+        logger.error('%s' % e)
+        response = {'result':'error', 'data':'%s' % e}
+    finally:
+        response = json.dumps(response)
+        return HttpResponse(response)
+
 # 根据项目类型(测试项目|UI自动化项目|接口自动化项目|所有项目)，获取对应的项目
 def get_projects(request):
     project_list = []
@@ -145,6 +164,7 @@ def get_projects(request):
     finally:
         response = json.dumps(response)
         return HttpResponse(response)
+
 
 # 根据项目类型(测试项目|UI自动化项目|接口自动化项目)，项目ID，获取获取对应的测试计划
 def get_plans(request):

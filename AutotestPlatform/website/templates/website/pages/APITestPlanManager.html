@@ -137,7 +137,7 @@
                 $(row).datagrid('beginEdit', editIndex);
 
                 // 初始化combobox的data
-                initValueForCombobox(editIndex);
+                initDataForRowComponets(editIndex);
                 ifInsert = true;
             }                
         }
@@ -268,15 +268,14 @@
                 var row = $('#API_test_plan').datagrid('selectRow', editIndex);
                 $(row).datagrid('beginEdit', editIndex);
 
-                // 初始化combobox的data
-                initValueForCombobox(editIndex);
+                // 初始化行组件的值
+                initDataForRowComponets(editIndex);
 
                 ifInsert = false;              
             }  
         }
             
-        //新增|修改计划时，初始化Combox data
-        function initValueForCombobox(index) {   
+        function initDataForRowComponets(index) {
             // 请求是否启用计划
             var validFlagEditor = $('#API_test_plan').datagrid('getEditor', {index: editIndex, field:'valid_flag'});
             $(validFlagEditor.target).combobox('loadData',[{'id':'0','choice':'禁用'},{'id':'1','choice':'启用'}]); 
