@@ -32,7 +32,7 @@ elif ssl_or_tls_protocol == 'v2':
 elif ssl_or_tls_protocol == 'v23':
     https_handler = urllib.request.HTTPSHandler(context=ssl.SSLContext(ssl.PROTOCOL_SSLv23))
 elif ssl_or_tls_protocol == 'v3':
-    https_handler = urllib.request.HTTPSHandler(context=ssl.PROTOCOL_SSLv3)
+    https_handler = urllib.request.HTTPSHandler(context=ssl.SSLContext(ssl.PROTOCOL_SSLv3))
 opener = urllib.request.build_opener(cookie_handler, https_handler)
 urllib.request.install_opener(opener)
 
