@@ -42,12 +42,11 @@ if __name__ == '__main__':
                         running_plan = RunningPlan(running_plan_num, running_plan_name, project_id, project_name, plan_name, plan_id_list)
                         logger.info('======================开始执行运行计划[名称：%s]======================' % running_plan_name)
                         result = running_plan.run(is_debug)
-                        if result[0]:
-                            logger.info('执行成功，正在更新数据库运行计划的运行状态')
-                        else:
-                            logger.info('执行失败，正在更新数据库运行计划的运行状态')
-
                         if not is_debug:
+                            if result[0]:
+                                logger.info('执行成功，正在更新数据库运行计划的运行状态')
+                            else:
+                                logger.info('执行失败，正在更新数据库运行计划的运行状态')
                             update_query = "UPDATE `website_running_plan` SET running_status ='%s', remark='%s' WHERE running_plan_num= %s"
                             data = (result[1], result[2].replace("'",'\"'), running_plan_num)
                             result = test_platform_db.execute_update(update_query, data)
