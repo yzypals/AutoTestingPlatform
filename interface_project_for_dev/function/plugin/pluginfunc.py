@@ -21,6 +21,14 @@ def __read_file(args_list):
             filepath, mode = args_list
             encoding = None
 
+        co_filepath = sys._getframe().f_code.co_filename
+        head, tail = os.path.split(co_filepath)
+        head = os.path.join(head, '../../testdata/')
+        filepath = os.path.join(head, filepath)
+        filepath = os.path.normpath(filepath)
+
+        msg = '待读取的文件路径为：%s' % filepath
+        logger.info(msg)
         if not os.path.exists(filepath):
             logger.warn('文件 %s 不存在' % filepath)
             return None

@@ -201,13 +201,6 @@
                 } else if (plan_name == '') {
                     $.messager.alert('提示','保存失败，计划名称不能为空', 'warnging');
                     isValid = false;
-                } else if (script_dirpath == '') {
-                    $.messager.alert('提示','保存失败，自动化脚本所在父级目录绝对路径不能为空', 'warnging');
-                    isValid = false;
-                } else if (python_path == '') {
-                    $.messager.alert('提示','保存失败，python安装目录不能为空', 'warnging');
-                    isValid = false;
-                }
 
                 if (!isValid) {
                     ifInsert = undefined;
