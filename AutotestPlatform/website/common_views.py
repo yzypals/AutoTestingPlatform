@@ -494,12 +494,13 @@ def copy_tree_leaf_node(request):
                     port = sub_node.port
                     run_times = sub_node.run_times
                     try_for_failure = sub_node.try_for_failure
+                    retry_frequency = sub_node.retry_frequency
                     case_id = node_obje_id
 
                     case_step_obj = API_test_case_step(order=step_order, status=status, step_type=step_type,op_object=op_object, object_id=object_id,exec_operation=exec_operation,
                                         request_header=request_header, request_method=request_method, url_or_sql=url_or_sql, input_params=input_params,
                                         response_to_check=response_to_check,check_rule=check_rule,check_pattern=check_pattern, output_params=output_params,
-                                        protocol=protocol, host=host, port=port, run_times=run_times, try_for_failure=try_for_failure, case_id=case_id)
+                                        protocol=protocol, host=host, port=port, run_times=run_times, try_for_failure=try_for_failure, retry_frequency=retry_frequency, case_id=case_id)
                     case_step_obj.save()
         return  HttpResponse('success')
     except Exception as e:
