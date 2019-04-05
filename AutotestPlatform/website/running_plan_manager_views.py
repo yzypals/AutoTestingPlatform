@@ -91,21 +91,6 @@ def add_running_plan(request):
             return  HttpResponse('保存失败，计划id不能为空')
         if plan_name == '':
             return  HttpResponse('保存失败，计划名称不能为空')
-        if script_dirpath == '':
-            return  HttpResponse('保存失败，运行脚本所在父级目录绝对路径不能为空')
-        # elif not os.path.exists(script_dirpath):
-        #     logger.info(script_dirpath)
-        #     return  HttpResponse('保存失败，运行脚本所在父级路径不存在')
-        # elif not os.path.isdir(script_dirpath):
-        #     return  HttpResponse('保存失败，自动化脚本所在父级路径不为目录')
-        # else:
-        #     # logger.info('正在规范化路径')
-        #     script_dirpath = os.path.normpath(script_dirpath)
-        # if not os.path.exists(python_path):
-        #     return  HttpResponse('保存失败，python.exe程序绝对路径不存在')
-        # else:
-        #     # logger.info('正在规范化路径')
-        #     python_path = os.path.normpath(python_path)
 
         script_dirpath = os.path.normpath(script_dirpath)
         python_path = os.path.normpath(python_path)
@@ -158,20 +143,6 @@ def update_running_plan(request):
         python_path = params['python_path']
         valid_flag = params['valid_flag']
 
-        if script_dirpath == '':
-            return  HttpResponse('保存失败，自动化脚本所在父级目录绝对路径不能为空')
-        # elif not os.path.exists(script_dirpath):
-        #     return  HttpResponse('保存失败，自动化脚本所在父级路径不存在')
-        # elif not os.path.isdir(script_dirpath):
-        #     return  HttpResponse('保存失败，运行脚本所在父级路径不为目录')
-        # else:
-        #     # logger.info('正在规范化路径')
-        #     script_dirpath = os.path.normpath(script_dirpath)
-        # if not os.path.exists(python_path):
-        #     return  HttpResponse('保存失败，python.exe程序绝对路径不存在')
-        # else:
-        #     # logger.info('正在规范化路径')
-        #     python_path = os.path.normpath(python_path)
         if valid_flag == '':
             return  HttpResponse('保存失败，是否启用不能为空')
 
