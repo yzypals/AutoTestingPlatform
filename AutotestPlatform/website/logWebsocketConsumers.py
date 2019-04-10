@@ -13,59 +13,12 @@ import time
 import platform
 import threading
 import traceback
-import inspect
-import ctypes
 
 from website.apiRunner.common.log import logger
 from website.apiRunner.APIRunner import APIRunner
 
 
 web_debug_log_level = settings.WEB_DEBUG_LOG_LEVEL.lower().strip()
-
-def _async_raise(tid, exctype):
-    """raises the exception, performs cleanup if needed"""
-    tid = ctypes.c_long(tid)
-    if not inspect.isclass(exctype):
-        exctype = type(exctype)
-    res = ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, ctypes.py_object(exctype))
-
-    if res == 0:
-        raise ValueError("invalid thread id")
-    elif res != 1:
-        # """if it returns a number greater than one, you're in trouble,
-        # and you should call it again with exc=NULL to revert the effect"""
-        ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, None)
-        raise SystemError("PyThreadState_SetAsyncExc failed")
-
-
-def stop_thread(thread):
-    '''停止线程函数'''
-
-    if thread.is_alive():
-        _async_raise(thread.ident, SystemExit)
-
-class ChatConsumer(WebsocketConsumer):
-    def connect(self):
-        self.accept()
-
-    def disconnect(self, close_code):
-        pass
-
-    def receive(self, text_data):
-        text_data_json = json.loads(text_data)
-        message = text_data_json['message']
-
-        self.send(text_data=json.dumps({
-            'message': message
-        }))
-        i = 0
-        while (i < 50):
-            i += 1
-            message = 'msg: ' + str(i)
-            self.send(text_data=json.dumps({
-                'message': message
-            }))
-            print(text_data)
 
 
 class LogWebsocketConsumer(WebsocketConsumer):
