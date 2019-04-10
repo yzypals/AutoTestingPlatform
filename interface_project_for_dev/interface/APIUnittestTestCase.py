@@ -7,6 +7,7 @@ import urllib.request
 import json
 import chardet
 import re
+import copy
 #from html.parser import HTMLParser
 
 from collections import OrderedDict
@@ -28,12 +29,13 @@ class APIUnittestTestCase(MyUnittestTestCase):
         try:
             method = self.request_method.lower()
             try:
+                input_params_copy = copy.deepcopy(self.input_params)
                 # 兼容旧版程序，旧数据， 吧json形式的数据，转为url编码 形如：把  {"id":1318,"password":"e10adc3949ba59abbe56e057f20f883e"} 转为  b'id=1318&password=e10adc3949ba59abbe56e057f20f883e'
                 if self.input_params:
                    self.input_params = json.loads(self.input_params, object_pairs_hook=OrderedDict)
                    self.input_params = urllib.parse.urlencode(self.input_params)  # 将参数转为url编码字符串# 注意，此处params为必须为字典类型的数据
             except Exception as e:
-                result = self.input_params.split('安全模式')[:]
+                result = input_params_copy.split('安全模式')[:]
                 if len(result) > 1:
                     self.input_params, safe = result
                 else:

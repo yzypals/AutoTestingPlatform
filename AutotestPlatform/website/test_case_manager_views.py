@@ -108,12 +108,19 @@ def get_api_case_steps(request):
 
     test_cases = page.object_list
     for test_case in test_cases:
+        test_case['request_header'] =  '<xmp>' + test_case['request_header'] + '</xmp>'
+        test_case['output_params'] =  '<xmp>' + test_case['output_params'] + '</xmp>'
         test_case['input_params'] =  '<xmp>' + test_case['input_params'] + '</xmp>'
         test_case['check_pattern'] =  '<xmp>' + test_case['check_pattern'] + '</xmp>'
         rows.append(test_case)
     grid_data["rows"] =  rows
     grid_data = json.dumps(grid_data)
     return HttpResponse(grid_data)
+
+# 右键用例树节点-调试，打开的页面
+def debug_api_case_or_suit(request):
+    template = loader.get_template('website/pages/debugAPICaseOrSuitView.html')
+    return HttpResponse(template.render({}, request))
 
 # 用例步骤中选择“对象类型”为页面元素时，请求获取元素页面
 def get_pages_for_page_elements(request):
@@ -546,7 +553,13 @@ def add_api_case_step(request):
             logger.info(input_params)
         if check_pattern.endswith('</xmp>'):
             check_pattern = check_pattern[:-6]
+
         output_params = params['output_params'].strip()
+        if output_params.startswith('<xmp>'):
+            output_params = output_params[5:]
+            logger.info(output_params)
+        if output_params.endswith('</xmp>'):
+            output_params = output_params[:-6]
         protocol = params['protocol'].strip().lower()
         if protocol != '' and protocol not in ('https', 'http'):
             return HttpResponse('协议只能为http、https')
@@ -721,6 +734,11 @@ def update_api_case_step(request):
             input_params = input_params.replace('\'', '\"')
 
         output_params = params['output_params'].strip()
+        if output_params.startswith('<xmp>'):
+            output_params = output_params[5:]
+            logger.info(output_params)
+        if output_params.endswith('</xmp>'):
+            output_params = output_params[:-6]
         protocol = params['protocol'].strip().lower()
         if protocol != '' and protocol not in ('https', 'http'):
             return HttpResponse('协议只能为http、https')

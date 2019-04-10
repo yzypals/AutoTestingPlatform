@@ -3,6 +3,7 @@ from django.shortcuts import render
 # Create your views here.
 from django.http import HttpResponse
 from django.template import loader
+from django.utils.safestring import mark_safe
 
 import json
 import logging
@@ -35,7 +36,10 @@ def get_nav(request):
     nav_menus = json.dumps(nav_menus)
     return HttpResponse(nav_menus, content_type="application/json")
 
-def testpost(request):
-    json_target = '{"name":"shouke", "hobby":"ktest"}'
+def chat_index(request):
+    return render(request, 'website/pages/chatIndex.html', {})
 
-    return HttpResponse(json_target,content_type="application/json")
+def chat_room(request, room_name):
+    return render(request, 'website/pages/chatRoom.html', {
+        'room_name_json': mark_safe(json.dumps(room_name))
+    })

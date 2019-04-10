@@ -33,7 +33,7 @@
         function onLoadSuccess(data) {
             // 修改“操作”列的按钮样式
             $('.resetBtn').linkbutton({text:'重置状态', plain:true, iconCls:'icon-add'});
-            $('.runBtn').linkbutton({text:'运行', plain:true, iconCls:'icon-add'});
+            $('.runBtn').linkbutton({text:'在线运行', plain:true, iconCls:'icon-add'});
             $('.insertRowBtn').linkbutton({text:'插入', plain:true, iconCls:'icon-add'});
             $('.editRowBtn').linkbutton({text:'修改', plain:true, iconCls:'icon-edit'});
             $('.deleteRowBtn').linkbutton({text:'删除', plain:true, iconCls:'icon-remove'});
@@ -51,8 +51,8 @@
 
         // 格式化【操作】列
         function formatOperationColumn(value,row,index){
-            var btn = "<a id='resetBtn" + index + "' class='resetBtn' onclick='resetRunningPlanStatus(" + JSON.stringify(row) + "," +index+")' href='javascript:void(0)'>重置状态</a> \
-                    <a id='runBtn" + index + "' class='runBtn' onclick='execRunningPlan(" + JSON.stringify(row) + "," +index+")' href='javascript:void(0)'>运行</a> \
+            var btn = "<a id='resetBtn" + index + "' class='resetBtn' onclick='setRunningPlanStatus(" + JSON.stringify(row) + "," +index+")' href='javascript:void(0)'>重置状态</a> \
+                    <a id='runBtn" + index + "' class='runBtn' onclick='execRunningPlan(" + JSON.stringify(row) + "," +index+")' href='javascript:void(0)'>在线运行</a> \
                     <a id='insertRowBtn" + index + "' class='insertRowBtn' onclick='insertRow("+JSON.stringify(row) +"," + index+")' href='javascript:void(0)'>插入</a> \
                     <a id='editRowBtn" + index + "' class='editRowBtn' onclick='editRow(" + row.id +"," + index+")' \
                     href='javascript:void(0)'>修改</a>\
@@ -112,17 +112,18 @@
             }
         }
 
-        function initDataForRowComponets(projectType, opType, projectIDList, planIDList, projectID, planName) {
+        function initDataForRowComponets(projectType, opType,  projectIDList, planIDList, projectID, planName) {
             var projectNameEditor =  $('#Running_plan').datagrid('getEditor', {index: editIndex, field: 'project_name'});
             var validFlagEditor = $('#Running_plan').datagrid('getEditor', {index: editIndex, field: 'valid_flag'});
             var planNameEditor = $('#Running_plan').datagrid('getEditor', {index: editIndex, field: 'plan_name'});
+            var scriptDirpathEditor = $('#Running_plan').datagrid('getEditor', {index: editIndex, field: 'script_dirpath'});
+            var pythonPathEditor  = $('#Running_plan').datagrid('getEditor', {index: editIndex, field: 'python_path'});
+
             var defaultProjectType = projectType;
             if (projectType == 'UI项目') {
                 projectType = 'UIProject';
             } else if(projectType == 'API项目'){
                 projectType = 'APIProject';
-            } else if(projectType == '所有项目'){
-                projectType = 'ALLProject';
             } else {
                 return;
             }
@@ -147,6 +148,7 @@
                         $.messager.alert('错误信息', '获取项目失败：' + jsonData['data'], 'error');
                     }
                 });
+
             } else if (opType == '修改') {
                 // 做这一步是为了让项目名称已选文本值和下拉列表中的选项关联
                 $(projectNameEditor.target).combobox('setValues', projectIDList);
@@ -159,9 +161,9 @@
                         // 必须等待获取项目成功后才进行以下操作，否则可能因为异步请求，清空下述操作的结果
                         getPlans(projectType, projectID).then(function(jsonData) {
                             if (jsonData['result'] == 'success') {
-                                 $(planNameEditor.target).combobox('setText', planName);
-                                 $(planNameEditor.target).combobox('loadData', jsonData['data']);
-                                 $(planNameEditor.target).combobox('setValues', planIDList);
+                                $(planNameEditor.target).combobox('setText', planName);
+                                $(planNameEditor.target).combobox('loadData', jsonData['data']);
+                                $(planNameEditor.target).combobox('setValues', planIDList);
                             } else {
                                 $.messager.alert('错误信息', '获取计划名称失败：' + jsonData['data'], 'error');
                             }
@@ -175,13 +177,20 @@
                 getProjects(projectType).then(function(jsonData) {
                     if (jsonData['result'] == 'success') {
                         $(projectNameEditor.target).combobox('clear');
-                        {#                            $(projectEditor.target).combobox('loadData', {'id':0, 'choice':''});#}
-
                         $(projectNameEditor.target).combobox('loadData', jsonData['data']);
                     } else {
                         $.messager.alert('错误信息', '获取项目失败：' + jsonData['data'], 'error');
                     }
                 });
+            }
+            if (projectType == 'APIProject') {
+                pythonPathEditor.target.val('');
+                pythonPathEditor.target.attr('disabled', true);
+                scriptDirpathEditor.target.val('');
+                scriptDirpathEditor.target.attr('disabled', true);
+            } else {
+                pythonPathEditor.target.attr('disabled', false);
+                scriptDirpathEditor.target.attr('disabled', false);
             }
         }
 
@@ -201,7 +210,7 @@
                 } else if (plan_name == '') {
                     $.messager.alert('提示','保存失败，计划名称不能为空', 'warnging');
                     isValid = false;
-				}
+                }
 
                 if (!isValid) {
                     ifInsert = undefined;
@@ -410,46 +419,64 @@
         }
 
 
-        // 本地执行运行计划
-        function execRunningPlan(row, index) {
-            if (row.running_status == '执行中') {
-                $.messager.alert('提示', '当前任务正在执行中，请等待任务完成或者重置运行状态后再重试', 'info');
-                return;
-            }
-            var runningPlanNum = row.running_plan_num;
-            var scriptDirpath = row.script_dirpath;
-            var pythonPath = row.python_path
-
-            $.ajax({
-                type: "POST",
-                url:"/action/execRunningPlan",
-                contentType: "application/json",
-                data:JSON.stringify({"runningPlanNum":runningPlanNum, "scriptDirpath":scriptDirpath, "pythonPath":pythonPath}),
-                sync: false,
-                success: function(data){
-                    $.messager.alert('提示', data, 'info');
-                    $('#Running_plan').datagrid('reload');
-                },
-                error: function(data){
-                    $.messager.alert('提示', '执行出错，错误码：' + data.status, 'info');
-                }
-            });
-            // $.post('/action/execRunningPlan', {runningPlanNum:runningPlanNum, scriptDirpath:scriptDirpath, pythonPath:pythonPath}, function(data, status) {
-            //         $.messager.alert('提示', data, 'info');
-            //         $('#Running_plan').datagrid('reload');
-            //     } 
-            // );
-        }
-
         // 重置运行状态
-        function resetRunningPlanStatus(row, index) {
+        function setRunningPlanStatus(row, index) {
             var runningPlanNum = row.running_plan_num;
             //$.messager.alert('提示', '请求成功，正在执行', 'info');
-            $.post('/action/resetRunningPlanStatus', {runningPlanNum:runningPlanNum}, function(data, status) {
+            $.post('/action/setRunningPlanStatus', {runningPlanNum:runningPlanNum}, function(data, status) {
                         $.messager.alert('提示', data, 'info');
                         $('#Running_plan').datagrid('reload');
                     }
             );
+        }
+
+        // 点击在线运行，打开tab页函数实现
+        function execRunningPlan(row, index) {
+            var projectType = row.project_type;
+            if (projectType == 'API项目') {
+                var url = '/pages/debugAPIRunningPlan';
+
+                var tabID = row.running_plan_num;
+                var title = 'run-' + row.running_plan_name;
+
+                var currentTab = window.parent.$('#tabs') //获取tab页面
+                if(currentTab.tabs('exists', title)){  // 如果tab已存在，则选中、激活tab
+                    currentTab.tabs('select', title);
+                } else{ //否则，添加tab
+                    var iframe='<iframe scrolling="auto"  id="iframe-' +  tabID + '" frameborder="0"  src="'+url+'" style="width:100%;height:100%;"></iframe>';
+                    currentTab.tabs('add',{
+                        id: tabID,
+                        title: title,
+                        content: iframe,
+                        closable: true
+                    });
+                }
+            } else if (projectType == 'UI项目'){
+                if (row.running_status == '正在运行') {
+                    $.messager.alert('提示', '当前任务正在执行中，请等待任务完成或者重置运行状态后再重试', 'info');
+                    return;
+                }
+                var runningPlanNum = row.running_plan_num;
+                var scriptDirpath = row.script_dirpath;
+                var pythonPath = row.python_path;
+                var projectType = row.project_type;
+
+                $.ajax({
+                    type: "POST",
+                    url:"/action/execRunningPlan",
+                    contentType: "application/json",
+                    data:JSON.stringify({"runningPlanNum":runningPlanNum, "scriptDirpath":scriptDirpath,
+                        "projectType":projectType, "pythonPath":pythonPath}),
+                    sync: false,
+                    success: function(data){
+                        $.messager.alert('提示', data, 'info');
+                        $('#Running_plan').datagrid('reload');
+                    },
+                    error: function(data){
+                        $.messager.alert('提示', '执行出错，错误码：' + data.status, 'info');
+                    }
+                });
+            }
         }
     </script>
 </head>
@@ -526,10 +553,10 @@
                                 editable:false
                             }}">是否启用</th>
             <th data-options="field:'running_status', align: 'left'" width="60px">运行状态</th>
-            <th data-options="field:'remark', align: 'left'" width="150px">失败原因备注</th>
+            <th data-options="field:'remark', align: 'left'" width="200px">失败原因备注</th>
             <th data-options="field:'operations', title:'操作', align: 'center',
                         formatter:function(value,row,index){return formatOperationColumn(value,row,index);}"
-                width="450px">操作</th>
+                width="480px">操作</th>
         </tr>
         </thead>
     </table>

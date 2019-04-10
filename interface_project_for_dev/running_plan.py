@@ -53,7 +53,7 @@ class RunningPlan:
                                 redis_related_to_project_dic[db_alias] = myredis
                     elif not result[0]:
                         logger.error('查询项目相关的数据库配置信息出错：%s' % result[1])
-                        return [False, '执行失败', result[1]]
+                        return [False, '运行失败', result[1]]
 
                     logger.info('正在查询与项目关联的全局变量')
                     result = test_platform_db.select_many_record("SELECT `name`, `value` "
@@ -66,7 +66,7 @@ class RunningPlan:
                             global_variable_dic[name] = value
                     elif not result[0]:
                         logger.error('查询项目相关的全局变量配置信息出错：%s' % result[1])
-                        return [False, '执行失败', result[1]]
+                        return [False, '运行失败', result[1]]
 
                     try:
                         if 'global_headers' in global_variable_dic.keys():
@@ -85,24 +85,24 @@ class RunningPlan:
                         result = test_project.run(debug)
 
                         if not result[0]:
-                            result = [False, '执行失败', result[1]]
+                            result = [False, '运行失败', result[1]]
                         else:
-                            result = [True, '执行成功', '']
+                            result = [True, '运行成功', '']
                     except Exception as e:
                         logger.error('%s' % e)
-                        result = [False, '执行失败', '%s' % e]
+                        result = [False, '运行失败', '%s' % e]
                 else:
                     logger.warn('项目已被禁用，结束运行')
-                    result = [False, '执行失败', '项目已被禁用，结束运行']
+                    result = [False, '运行失败', '项目已被禁用，结束运行']
             elif result[0] and not result[1]:
                 logger.error('未查询到项目相关的信息')
-                result = [False, '执行失败', '未查询到项目相关的信息']
+                result = [False, '运行失败', '未查询到项目相关的信息']
             else:
                 logger.error('查询项目相关信息失败：%s' % result[1])
-                result = [False, '执行失败', '查询项目相关信息失败：%s' % result[1]]
+                result = [False, '运行失败', '查询项目相关信息失败：%s' % result[1]]
         except Exception as e:
             logger.error('%s' % e)
-            result =  [False, '执行失败', '%s'% e]
+            result =  [False, '运行失败', '%s'% e]
         finally:
             logger.info('正在释放资源')
             logger.info('正在断开与项目关联的数据库连接')

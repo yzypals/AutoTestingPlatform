@@ -12,9 +12,21 @@
     <link rel="stylesheet" type="text/css" href="{% static  'website/jquery-easyui/themes/default/easyui.css' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'website/jquery-easyui/themes/icon.css' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'website/jquery-easyui/demo/demo.css' %}">
+    <style type="text/css">
+        /*去掉easyui tabs右侧滚动条*/
+        #tabs .tabs-panels>.panel>.panel-body {
+            overflow: hidden;
+        }
+    </style>
+
     <script>
         var projectID = undefined;  //全局变量，存储获取的项目ID ，用于展示节点树
+
         $(document).ready(function() {
+            document.oncontextmenu=function(e) { // 通知 Web 浏览器不要执行与事件关联的默认动作;
+                e.preventDefault();
+            }
+
             // 初始化项目combobox下拉列表
             getProjects('APIProject').then(function(jsonData) {
                 if (jsonData['result'] == 'success') {
@@ -233,10 +245,16 @@
                 } catch (e) {
                     $.messager.alert('提示', '刷新失败', 'info');
                 }
+            } else if (item.text == '调试') {
+                try {
+                    var tabID = projectID + '-' + treeNodeSelected.id;
+                    addDebugCaseOrSuitTab('debug-' + treeNodeSelected.text, tabID);
+                } catch (e) {
+                    $.messager.alert('告警', '调试出错', 'warn');
+                    return;
+                }
             }
         }
-
-
 
 
         // 点击用例树，叶节点，打开对应tab页的函数实现
@@ -245,7 +263,7 @@
             if($('#tabs').tabs('exists', title)){  // 如果tab已存在，则选中、激活tab
                 $('#tabs').tabs('select', title);
             } else{ //否则，添加tab
-                var iframe='<iframe scrolling="auto" frameborder="0"  src="'+url+'" style="width:100%;height:100%;"></iframe>';
+                var iframe='<iframe scrolling="auto" type="openNode" title="' + title + '" frameborder="0"  src="'+url+'" style="width:100%;height:100%;"></iframe>';
                 $('#tabs').tabs('add',{
                     id: tabID,
                     title: title,
@@ -254,6 +272,45 @@
                 });
             }
         }
+
+        // 右键用例树叶节点-调试,打开对应tab页的函数实现
+        function addDebugCaseOrSuitTab(title, tabID){
+
+            var url = '/pages/debugAPICaseOrSuit';
+            if($('#tabs').tabs('exists', title)){  // 如果tab已存在，则选中、激活tab
+                $('#tabs').tabs('select', title);
+            } else{ //否则，添加tab
+                var iframe='<iframe scrolling="auto" type="debug" title="' + title + '" id="iframe-' +  tabID + '" frameborder="0"  src="'+url+'" style="width:100%;height:100%;"></iframe>';
+                $('#tabs').tabs('add',{
+                    id: tabID,
+                    title: title,
+                    content: iframe,
+                    closable: true
+                });
+            }
+        }
+
+        // 关闭tab前增加该页面对应任务执行状态判断
+        $(function(){
+            $('#tabs').tabs({
+                onBeforeClose: function(title,index){
+                    if (title.indexOf('debug-') != -1) { // debug调试页面,否则用例步骤页面
+                        var target = this;
+                        var tab = $(target).tabs('getTab', index);
+                        var tabID = tab.panel('options').id;
+                        var taskStatus = document.getElementById('iframe-' +  tabID).contentWindow.taskStatus;
+                        if (taskStatus) {
+                            if ( taskStatus != 'taskEnd') {
+                                $.messager.alert('告警', '正在调试运行，请等待运行结束后再关闭!', 'warn')
+                                return false;
+                            }
+                        }
+                        return true;
+                    }
+                    return true;
+                }
+            });
+        });
 
         // 树形结构上方，项目commbobox onSelect事件处理
         function onSelectComboboxRow(row) {
@@ -265,12 +322,38 @@
             // 存储选择的项目ID
             storeProjectChosen('APICaseTree', projectID, projectName);
 
-            // 关闭所有标签页
+            var iframes=document.getElementsByTagName("iframe");
+            var titleArray = [];
+
+            for(var i=0;i<iframes.length;i++)
+            {
+                var iframe = iframes[i];
+                var title = iframe.getAttribute('title'); // iframe的自定义title属性设计为和tab的title一样了
+                if (iframe.getAttribute('type') == 'debug') {
+                    var taskStatus = iframe.contentWindow.taskStatus;
+                    if (taskStatus == undefined || taskStatus == 'taskEnd') {
+                        //$('#tabs').tabs('close', title); // 注意，这里不能直接关闭，这样操作会导致部分本应该关闭的tab页没又被关闭
+                        titleArray.push(title);
+                    }
+                } else if (iframe.getAttribute('type') == 'openNode') {
+                    // $('#tabs').tabs('close', title);
+                    titleArray.push(title);
+                }
+            }
+
+            // 关闭可关闭的标签页
             var allTabs = $('#tabs').tabs('tabs');
+            //for(var i=0; i<allTabs.length; i++) {
+            //    var title = allTabs[i].panel('options').title;
+            //    $('#tabs').tabs('close', title);
+            //    i--;
+            //}
             for(var i=0; i<allTabs.length; i++) {
                 var title = allTabs[i].panel('options').title;
-                $('#tabs').tabs('close', title);
-                i--;
+                if (titleArray.indexOf(title) >= 0) {
+                    $('#tabs').tabs('close', title);
+                    i--;
+                }
             }
         }
 
@@ -314,6 +397,7 @@
     <div data-options="iconCls:'icon-remove'">删除</div>
     <div data-options="iconCls:'icon-copy'">复制</div>
     <div data-options="iconCls:'icon-copy'">刷新</div>
+    <div data-options="iconCls:'icon-copy'">调试</div>
 </div>
 </body>
 </html>

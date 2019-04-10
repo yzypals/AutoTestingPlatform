@@ -34,20 +34,27 @@ class TestCaseStep:
         self.op_object = op_object
         self.object_id = object_id
         self.exec_operation = exec_operation.lower()
+        self.exec_operation2 = exec_operation.lower()
         self.request_headers = request_headers
+        self.request_headers2 = request_headers
         self.request_method = request_method
         self.url_or_sql = url_or_sql
+        self.url_or_sql2 = url_or_sql
         self.input_params = input_params
+        self.input_params2 = input_params
         self.response_to_check = response_to_check
         self.check_rule = check_rule.strip()
         self.check_pattern = check_pattern
         self.output_params = output_params
+        self.output_params2 = self.output_params
         self.protocol = protocol
         self.host = host
+        self.host2 = host
         self.port = port
         self.global_headers = global_headers
         self.http = MyHttp(protocol, host, port)
         self.func_map = {'死等待':'test_sleep'} # 存放函数中文名称及代码层函数的映射关系
+        self.class_name = ''
 
 
     def set_check_pattern(self, check_pattern):
@@ -150,82 +157,83 @@ class TestCaseStep:
             return [src_string, src_string_copy]
 
 
-    def run(self, debug):
+    def run(self, debug, retry=False):
         try:
             # 获取开始运行时间
             start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
             logger.info('步骤类型：%s' % self.step_type)
             logger.info('步骤操作对象：%s' % self.op_object)
             logger.info('执行操作：%s' % self.exec_operation)
-            if self.step_type == '请求接口':
-                if self.request_headers:
-                    logger.info('正在替换“请求头”中的动态参数')
-                    self.request_headers = self.replace_variable(self.request_headers)
-                    self.request_headers = json.loads(self.request_headers, object_hook=OrderedDict)
-                    request_headers = self.request_headers.copy()
-                else:
-                    request_headers = {}
+            if not retry:
+                if self.step_type == '请求接口':
+                    if self.request_headers:
+                        logger.info('正在替换“请求头”中的动态参数')
+                        self.request_headers = self.replace_variable(self.request_headers)
+                        self.request_headers = json.loads(self.request_headers, object_hook=OrderedDict)
+                        self.request_headers2 = self.request_headers.copy()
+                    else:
+                        self.request_headers2 = {}
 
-                for host in self.global_headers:
-                    # 判断该host下是否有全局请求头
-                    host_of_interface = self.host
-                    if host == host_of_interface:
-                       request_headers.update(self.global_headers[host])
-                self.http.set_headers(request_headers)
+                    for host in self.global_headers:
+                        # 判断该host下是否有全局请求头
+                        host_of_interface = self.host
+                        if host == host_of_interface:
+                           self.request_headers2.update(self.global_headers[host])
+                    self.http.set_headers(self.request_headers2)
 
-                class_name = self.op_object
-                exec_operation = self.exec_operation
-            elif self.step_type == '操作数据库':
-                class_name = 'DBUnittestTestCase'
-                exec_operation = 'test_' + self.exec_operation
-                request_headers = ''
-            elif self.step_type == '执行函数':
-                class_name = 'FuncUnittestTestCase'
-                exec_operation = self.func_map.get(self.op_object)
-                request_headers = ''
-            elif self.step_type == '操作Redis':
-                class_name = 'RedisUnittestTestCase'
-                exec_operation = 'test_' + self.exec_operation
-                request_headers = ''
+                    self.class_name = self.op_object
+                    self.exec_operation2 = self.exec_operation
+                elif self.step_type == '操作数据库':
+                    self.class_name = 'DBUnittestTestCase'
+                    self.exec_operation2 = 'test_' + self.exec_operation
+                    self.request_headers2 = ''
+                elif self.step_type == '执行函数':
+                    self.class_name = 'FuncUnittestTestCase'
+                    self.exec_operation2 = self.func_map.get(self.op_object)
+                    self.request_headers2 = ''
+                elif self.step_type == '操作Redis':
+                    self.class_name = 'RedisUnittestTestCase'
+                    self.exec_operation2 = 'test_' + self.exec_operation
+                    self.request_headers2 = ''
 
-            input_params = self.input_params
-            url_or_sql = self.url_or_sql
-            host = self.host
+                self.input_params2 = self.input_params
+                self.url_or_sql2 = self.url_or_sql
+                self.host2 = self.host
 
-            if self.input_params:
-                logger.info('正在替换“输入参数”中的动态参数')
-                self.input_params = self.replace_variable(self.input_params)
+                if self.input_params:
+                    logger.info('正在替换“输入参数”中的动态参数')
+                    self.input_params = self.replace_variable(self.input_params)
 
-                logger.info('正在替换“输入参数”中的插件函数')
-                result = self.replace_plugin_func(self.input_params)
-                self.input_params, input_params = result
-            if self.url_or_sql:
-                logger.info('正在替换“URL/SQL”中的动态参数')
-                self.url_or_sql = self.replace_variable(self.url_or_sql)
+                    logger.info('正在替换“输入参数”中的插件函数')
+                    result = self.replace_plugin_func(self.input_params)
+                    self.input_params, self.input_params2 = result
+                if self.url_or_sql:
+                    logger.info('正在替换“URL/SQL”中的动态参数')
+                    self.url_or_sql = self.replace_variable(self.url_or_sql)
 
-                logger.info('正在替换“URL/SQL”中的插件函数')
-                result = self.replace_plugin_func(self.url_or_sql)
-                self.url_or_sql, url_or_sql = result
+                    logger.info('正在替换“URL/SQL”中的插件函数')
+                    result = self.replace_plugin_func(self.url_or_sql)
+                    self.url_or_sql, self.url_or_sql2 = result
 
-            if self.host:
-                logger.info('正在替换“主机地址”中的动态参数')
-                self.host = self.replace_variable(self.host)
+                if self.host:
+                    logger.info('正在替换“主机地址”中的动态参数')
+                    self.host = self.replace_variable(self.host)
 
-                logger.info('正在替换“主机地址”中的插件函数')
-                result = self.replace_plugin_func(self.host)
-                self.host, host = result
-                self.http.set_host(self.host)
+                    logger.info('正在替换“主机地址”中的插件函数')
+                    result = self.replace_plugin_func(self.host)
+                    self.host, self.host2 = result
+                    self.http.set_host(self.host)
 
 
-            if self.output_params:
-                self.output_params = json.loads(self.output_params) # 转为字典
+                if self.output_params:
+                    self.output_params = json.loads(self.output_params) # 转为字典
 
             runner = unittest.TextTestRunner()
             test_step_action = unittest.TestSuite()
 
-            test_step_action.addTest((globals()[class_name])(self.op_object, request_headers, self.request_method, self.url_or_sql, self.input_params,
+            test_step_action.addTest((globals()[self.class_name])(self.op_object, self.request_headers2, self.request_method, self.url_or_sql, self.input_params,
                                                                  self.check_rule, self.check_pattern, self.response_to_check,
-                                                                 self.output_params, self.http, self, exec_operation))
+                                                                 self.output_params, self.http, self, self.exec_operation2))
             step_run_result = runner.run(test_step_action)
 
             logger.debug('step_run_result：%s, errors：%s，failures：%s' % (step_run_result, step_run_result.errors, step_run_result.failures))
@@ -251,24 +259,21 @@ class TestCaseStep:
             result = [False, '失败', '%s' % e]
         finally:
             if not debug:
+                msg = '正在收集用例步骤运行结果数据'
+                logger.info(msg)
                 # logger.info('======================正在记录用例步骤运行结果到测试报告-用例步骤执行明细表======================')
-                if self.step_type not in ['操作数据库', '执行函数']:
-                    self.input_params = self.http.get_request_param()
-                    if type(self.input_params) == type(b''):
-                        self.input_params = self.input_params.decode('utf-8')
-                    request_headers = json.dumps(request_headers, ensure_ascii=False, indent=4)
-                else:
-                    self.http.protocol, self.host, self.port = '', '', ''
+                if not retry:
+                    if self.step_type in ['操作数据库', '执行函数', '操作Redis']:
+                        self.http.protocol, self.host2, self.port = '', '', ''
 
-                if self.check_pattern:
-                    self.check_pattern = "[" + json.dumps(self.check_pattern[0], ensure_ascii=False, indent=4) + "]"
-
-                if self.output_params:
-                    self.output_params = json.dumps(self.output_params, ensure_ascii=False, indent=4)
-
+                request_headers2 = '<xmp>%s</xmp>' % str(self.request_headers2)
+                input_params2 = '<xmp>%s</xmp>' % str(self.input_params2)
+                output_params2 = '<xmp>%s</xmp>' % str(self.output_params2)
+                check_pattern = '<xmp>%s</xmp>' % json.dumps(self.check_pattern, ensure_ascii=False, indent=4)
+                remark = '<xmp>%s</xmp>' % remark
                 data = (self.execution_num, self.plan_id, self.case_id, self.step_id, self.order, self.step_type, self.op_object, self.object_id, self.exec_operation,
-                            self.http.protocol, host, self.port, request_headers, self.request_method, url_or_sql,
-                            input_params, self.response_to_check, self.check_rule, self.check_pattern, self.output_params, result[1], remark, start_time, 0)
+                            self.http.protocol, self.host2, self.port, request_headers2, self.request_method, self.url_or_sql2,
+                            input_params2, self.response_to_check, self.check_rule, check_pattern, output_params2, result[1], remark, start_time, 0)
                 # test_reporter.insert_report_for_case_step(data) # 注释，以防止记录失败重试过程中的步骤运行结果
                 result.append(data)
             else:

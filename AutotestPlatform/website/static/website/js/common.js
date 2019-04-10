@@ -1,5 +1,7 @@
 $.noConflict();
 
+var daphneListenPort = 8001;
+
 // 获取上次选择的项目(ID),用于展示树形结构，测试计划等
 function getProjectChosen(treeType){
 	var defer = $.Deferred();
@@ -123,8 +125,8 @@ function addToolbar(datagridID, datagridType) {
                         iconCls:'icon-enable',
                         handler:function(){
                             enableOrDisableCaseStep(datagridID, '启用');
-                        }                             
-                    }];        
+                        }
+                    }];
     } else {
         var toolbar = [{
                         text:'新增',

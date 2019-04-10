@@ -87,6 +87,12 @@ urlpatterns = [
     url(r'^action/addAPIProjectSetting', project_setting_views.add_api_project_setting, name='add_api_project_setting'),
     url(r'^action/editAPIProjectSetting', project_setting_views.edit_api_project_setting, name='edit_api_project_setting'),
 
+    # 项目管理-API项目配置
+    url(r'^pages/TestProjectSetting', project_setting_views.test_project_setting, name='api_test_setting'),
+    url(r'^action/loadTestProjectSettings', project_setting_views.get_test_project_settings, name='get_test_project_settings'),
+    url(r'^action/addTestProjectSetting', project_setting_views.add_test_project_setting, name='add_test_project_setting'),
+    url(r'^action/editTestProjectSetting', project_setting_views.edit_test_project_setting, name='edit_test_project_setting'),
+
     # 环境配置
     url(r'^pages/envSetting', env_setting_views.env_setting, name='env_setting'),
     url(r'^action/loadEnvSettings', env_setting_views.get_env_settings, name='get_env_settings'),
@@ -164,6 +170,7 @@ urlpatterns = [
 
     # API测试用例管理
     url(r'^pages/APICaseManager', test_case_manager_views.api_case_manager, name='api_case_manager'),
+    url(r'^pages/debugAPICaseOrSuit', test_case_manager_views.debug_api_case_or_suit, name='debug_api_case_or_suit'),
     url(r'^action/APICaseTreeNodePage', test_case_manager_views.api_case_tree_node_page, name='api_case_tree_node_page'),
     url(r'^action/loadAPICaseSteps', test_case_manager_views.get_api_case_steps, name='load_api_case_steps'),
     url(r'^action/getCasesForProject', test_case_manager_views.get_cases_for_project, name='get_cases_for_project'),
@@ -171,6 +178,7 @@ urlpatterns = [
     url(r'^action/addAPICaseStep', test_case_manager_views.add_api_case_step, name='add_api_case_step'),
     url(r'^action/updateAPICaseStep', test_case_manager_views.update_api_case_step, name='update_api_case_step'),
     url(r'^action/getRedis', test_case_manager_views.get_rediss_obj, name='get_rediss_obj'),
+
 
 
      # UI测试计划管理
@@ -184,9 +192,11 @@ urlpatterns = [
 
     # API测试计划管理
     url(r'^pages/APITestPlanManager', test_plan_manager_views.api_test_plan_manager, name='api_test_plan_manager'),
+    url(r'^pages/debugAPITestPlan', test_plan_manager_views.debug_api_test_plan, name='debug_api_test_plan'),
     url(r'^action/getAPITestPlans', test_plan_manager_views.get_api_test_plans, name='get_api_test_plans'),
     url(r'^action/addAPITestPlan', test_plan_manager_views.add_api_test_plan, name='add_api_test_plan'),
     url(r'^action/updateAPITestPlan', test_plan_manager_views.update_api_test_plan, name='update_api_test_plan'),
+
 
     # 关联计划和测试用例
     url(r'^action/correlateTestplanAndTestcase', test_plan_manager_views.correlate_testplan_and_testcase, name='correlate_testplan_and_testcase'),
@@ -209,12 +219,12 @@ urlpatterns = [
 
     # 运行计划管理
     url(r'^pages/runningPlanManager', running_plan_manager_views.running_plan_manager, name='running_plan_manager'),
+    url(r'^pages/debugAPIRunningPlan', running_plan_manager_views.debug_api_running_plan, name='debug_api_running_plan'),
     url(r'^action/getRunningPlans', running_plan_manager_views.get_running_plans, name='running_plan_manager'),
     url(r'^action/addRunningPlan', running_plan_manager_views.add_running_plan, name='add_running_plan'),
     url(r'^action/updateRunningPlan', running_plan_manager_views.update_running_plan, name='update_running_plan'),
     url(r'^action/execRunningPlan', running_plan_manager_views.exec_running_plan, name='exec_running_plan'),
-    url(r'^action/resetRunningPlanStatus', running_plan_manager_views.reset_running_plan_status, name='reset_running_plan_status'),
-
+    url(r'^action/setRunningPlanStatus', running_plan_manager_views.set_running_plan_status, name='set_running_plan_status'),
 
 
     # 根据项目类型(测试项目|UI自动化项目|接口自动化项目)，项目ID，获取获取对应的测试计划
@@ -234,7 +244,6 @@ urlpatterns = [
 
     # API测试报告--测试概况
     url(r'^pages/APITestReport.html', test_report_views.api_test_report, name='api_test_report'),
-    url(r'^pages/postjson', views.testpost, name='index2'),
 
     # 定制化接口
     # 忘记密码 - 获取手机号验证码

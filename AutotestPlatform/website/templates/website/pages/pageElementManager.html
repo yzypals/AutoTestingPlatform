@@ -5,28 +5,39 @@
     <title>测试平台</title>
     {% load staticfiles %}
     <!--引入JQuery-->
-    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery-3.2.1.min.js' %}"></script> 
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery-3.2.1.min.js' %}"></script>
     <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery.easyui.min.js' %}"></script>
-    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery.min.js' %}"></script> 
-    <script type="text/javascript" src="{% static 'website/js/common.js' %}"></script>            
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'website/js/common.js' %}"></script>
     <script type="text/javascript" src="{% static 'website/jquery-easyui/locale/easyui-lang-zh_CN.js' %}"></script>
     <link rel="stylesheet" type="text/css" href="{% static  'website/jquery-easyui/themes/default/easyui.css' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'website/jquery-easyui/themes/icon.css' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'website/jquery-easyui/demo/demo.css' %}">
+    <style type="text/css">
+        /*去掉easyui tabs右侧滚动条*/
+        #tabs .tabs-panels>.panel>.panel-body {
+            overflow: hidden;
+        }
+    </style>
+
     <script>
+        document.oncontextmenu=function(e) { // 通知 Web 浏览器不要执行与事件关联的默认动作;
+            e.preventDefault();
+        }
+
         var projectID = undefined;  //全局变量，存储获取的项目ID ，用于展示节点树
         $(document).ready(function() {
             // 初始化项目combobox下拉列表
-            getProjects('UIProject').then(function(jsonData) { 
+            getProjects('UIProject').then(function(jsonData) {
                 if (jsonData['result'] == 'success') {
                     $('#projects').combobox('loadData', jsonData['data']);
                 } else {
-                    $.messager.alert('错误信息', '获取项目失败：' + jsonData['data'], 'error');                 
+                    $.messager.alert('错误信息', '获取项目失败：' + jsonData['data'], 'error');
                 }
             });
             var id_of_settimeout = undefined; // 用于存储setTimeout() 返回的 ID 值。该值标识要取消的延迟执行代码块。
-             
-            getProjectChosen('PageTree').then(function(jsonData) { 
+
+            getProjectChosen('PageTree').then(function(jsonData) {
                 if (jsonData['result'] == 'success') {
                     // 初始化项目combobox的值，并获取项目ID
                     $('#projects').combobox('setValue', jsonData['data']['projectName']);
@@ -39,17 +50,17 @@
                         onClick: function(node){
                             var rootNodeId =  $(this).tree('getRoot', node.target).id
                             if (node.id != rootNodeId) {  // 非根节点
-                                
+
                                 // 取消上次延时未执行的方法
                                 clearTimeout(id_of_settimeout);
-                                
+
                                 //执行延时
                                 id_of_settimeout = setTimeout(function(){
                                     // if ($(this).tree('isLeaf', node.target)) { //如果为叶节点，即无子节点，则打开页面
                                     //     addTab(node.text, node.id);
                                     // }
                                     addTab(node.text, node.id);
-                                }, 300);                                                      
+                                }, 300);
                             }
                         },
                         onDblClick: function(node){
@@ -57,24 +68,24 @@
                             clearTimeout(id_of_settimeout);
                             nodetext = node.text; // 保存更改之前的节点名称
                             $(this).tree('beginEdit', node.target);
-                            
+
                         },
                         onAfterEdit: function(node){
                             if (node.text != '') {
                                 $.post('/action/updateTreeNodeName',
-                                    {
-                                        nodeID:node.id, 
-                                        nodeText:node.text,
-                                        treeType:'PageTree'
-                                    },
-                                    function(data,status){
-                                       if (data == 'success') {
-                                            $.messager.alert('提示','保存成功', 'info');
-                                        } else {
-                                            $.messager.alert('提示', '保存失败: ' + data, 'info');
-                                        }        
-                                    }
-                                ); 
+                                        {
+                                            nodeID:node.id,
+                                            nodeText:node.text,
+                                            treeType:'PageTree'
+                                        },
+                                        function(data,status){
+                                            if (data == 'success') {
+                                                $.messager.alert('提示','保存成功', 'info');
+                                            } else {
+                                                $.messager.alert('提示', '保存失败: ' + data, 'info');
+                                            }
+                                        }
+                                );
                             } else {
                                 $.messager.alert('提示','保存失败，节点名称不能为空', 'info');
                                 // 还原节点名称
@@ -83,9 +94,9 @@
                         },
                         onDrop: function(target,source,point){  //节点拖拽
                             var targetNode = $(this).tree('getNode',target);
- 
+
                             var target = '{"id":' + targetNode.id + ', "projectID":' + targetNode.project_id + ', "parentID":' + targetNode.parent_id + ',"order":'+ targetNode.order +'}';
-                            var source = '{"id":' + source.id + ', "projectID":' + source.project_id + ', "parentID":' + source.parent_id + ',"order":'+ targetNode.order + '}';  
+                            var source = '{"id":' + source.id + ', "projectID":' + source.project_id + ', "parentID":' + source.parent_id + ',"order":'+ targetNode.order + '}';
                             var treeType = "PageTree";
 
                             if (targetNode.parent_id == 0 && point=="top") {  // 拖动到根节点之上
@@ -103,8 +114,8 @@
                                     if (data == 'success') {
                                         $.messager.alert('提示', '保存成功', 'info');
                                     } else {
-                                        $.messager.alert('提示', '保存失败:' + data, 'error');                                        
-                                    }                
+                                        $.messager.alert('提示', '保存失败:' + data, 'error');
+                                    }
                                     $('#tree').tree({url:'nodeTree?treeType=PageTree&projectID=' + targetNode.project_id});
                                 },
                                 error: function(data){
@@ -124,69 +135,69 @@
                     });
                 } else {
                     $.messager.alert('错误信息', '获取项目失败：' + jsonData['data'], 'error');
-                }              
-            });         
-        });   
+                }
+            });
+        });
 
-     
+
 
         // 增加节点
         function treeNodeMenuHandler(item){
             if (item.text == '添加') { //添加子节点            
-               $.post('/action/appendTreeNode', {
-                    nodeParentID:treeNodeSelected.id,
-                    nodeText:'nodename',
-                    state:'open',
-                    iconCls:'',
-                    attributes:'',
-                    treeType: 'PageTree',
-                    projectID: projectID
-                },
-                function(data,status){
-                    if (data == 'success') {
-                        $.messager.alert('提示','添加成功', 'info');                       
-                    // $('#pageTree').tree('append', {
-                    //     parent: treeNodeSelected.target,
-                    //     data:[{text:'pagename',state:'open', children:[]}]
-                    // });
-                        $('#tree').tree({url:'nodeTree?treeType=PageTree&projectID=' + projectID});
-                    } else {
-                        $.messager.alert('提示', '添加失败: ' + data, 'info');
-                    }        
-                });
+                $.post('/action/appendTreeNode', {
+                            nodeParentID:treeNodeSelected.id,
+                            nodeText:'nodename',
+                            state:'open',
+                            iconCls:'',
+                            attributes:'',
+                            treeType: 'PageTree',
+                            projectID: projectID
+                        },
+                        function(data,status){
+                            if (data == 'success') {
+                                $.messager.alert('提示','添加成功', 'info');
+                                // $('#pageTree').tree('append', {
+                                //     parent: treeNodeSelected.target,
+                                //     data:[{text:'pagename',state:'open', children:[]}]
+                                // });
+                                $('#tree').tree({url:'nodeTree?treeType=PageTree&projectID=' + projectID});
+                            } else {
+                                $.messager.alert('提示', '添加失败: ' + data, 'info');
+                            }
+                        });
             } else if (item.text == '删除') {
                 var rootNodeId =  $('#tree').tree('getRoot', treeNodeSelected.target).id
                 if (treeNodeSelected.id == rootNodeId) { //根目录不允许删除
-                    $.messager.alert('告警','根目录不允许删除', 'warning');   
+                    $.messager.alert('告警','根目录不允许删除', 'warning');
                     return;
                 }
                 $.messager.confirm('确认','确定删除'+treeNodeSelected.text+'页面吗？',function(r){
                     if(r){
                         $.post('/action/removeTreeNode', {
-                                nodeID:treeNodeSelected.id,
-                                parentID:treeNodeSelected.parent_id,
-                                projectID: treeNodeSelected.project_id,
-                                order:treeNodeSelected.order,
-                                treeType:'PageTree'
-                            },
-                            function(data, status) {
-                                if (data == 'success') {
-                                    $.messager.alert('提示', '删除成功', 'info');
-                                    $('#tree').tree('remove', treeNodeSelected.target);
-                                } else {
-                                    $.messager.alert('提示', '删除失败:' + data, 'info');
+                                    nodeID:treeNodeSelected.id,
+                                    parentID:treeNodeSelected.parent_id,
+                                    projectID: treeNodeSelected.project_id,
+                                    order:treeNodeSelected.order,
+                                    treeType:'PageTree'
+                                },
+                                function(data, status) {
+                                    if (data == 'success') {
+                                        $.messager.alert('提示', '删除成功', 'info');
+                                        $('#tree').tree('remove', treeNodeSelected.target);
+                                    } else {
+                                        $.messager.alert('提示', '删除失败:' + data, 'info');
+                                    }
                                 }
-                            }
-                        );                    
+                        );
                     }
-                }); 
-            } else if (item.text == '刷新') { 
-                try {              
+                });
+            } else if (item.text == '刷新') {
+                try {
                     $('#tree').tree({url:'nodeTree?treeType=PageTree&projectID=' + projectID});
                     $.messager.alert('提示', '刷新成功', 'info');
                 } catch (e) {
                     $.messager.alert('提示', '刷新失败', 'info');
-                }     
+                }
             }
         }
 
@@ -195,8 +206,8 @@
         function addTab(title, nodeID){
             var url = '/pages/pageTreeNodePage';
             if($('#tabs').tabs('exists', title)){  // 如果tab已存在，则选中tab
-                $('#tabs').tabs('select', title); 
-                var currentTab = $('#tabs').tabs('getSelected'); 
+                $('#tabs').tabs('select', title);
+                var currentTab = $('#tabs').tabs('getSelected');
             } else { //否则，添加tab
                 var iframe='<iframe scrolling="auto" frameborder="0"  src="'+url+'" style="width:100%;height:100%;"></iframe>';
                 $('#tabs').tabs('add',{
@@ -218,12 +229,12 @@
 
             // 存储选择的项目ID
             storeProjectChosen('PageTree', projectID, projectName);
-            
+
             // 关闭所有标签页
             var allTabs = $('#tabs').tabs('tabs');
             for(var i=0; i<allTabs.length; i++) {
                 var title = allTabs[i].panel('options').title;
-                $('#tabs').tabs('close', title); 
+                $('#tabs').tabs('close', title);
                 i--;
             }
 
@@ -233,16 +244,16 @@
             //     var title = tab.panel('options').title;
             //     $('#tabs').tabs('close', title);
             // });
-        } 
+        }
 
 
 
     </script>
 </head>
 <body class="easyui-layout">
-    <div data-options="region:'west',split: true" title="页面管理" style="width: 300px;">
-        <div style="position:absolute; left:0px; top:28px; width:94%; border:solid 1px #D2E0F2; display:block; background-color:white;"> 
-            <input id="projects" class="easyui-combobox" name="projects" style="width:100%;" data-options="
+<div data-options="region:'west',split: true" title="页面管理" style="width: 300px;">
+    <div style="position:absolute; left:0px; top:28px; width:94%; border:solid 1px #D2E0F2; display:block; background-color:white;">
+        <input id="projects" class="easyui-combobox" name="projects" style="width:100%;" data-options="
                 valueField: 'id',
                 textField: 'choice',
                 label: '下拉选择项目',
@@ -250,22 +261,22 @@
                 labelPosition: 'top',
                 onSelect: onSelectComboboxRow
                 ">
-        </div>
-        <div style="margin-top: 50px">
-            <ul id="tree" data-options="animate:true,lines:true"></ul> 
-        </div>
     </div>
-    <div data-options="region:'center',titles:'页面元素管理'">
-        <div class="easyui-tabs"  id="tabs" data-options="fit:true, border:false, plain:true">
-        </div>
+    <div style="margin-top: 50px">
+        <ul id="tree" data-options="animate:true,lines:true"></ul>
     </div>
+</div>
+<div data-options="region:'center',titles:'页面元素管理'">
+    <div class="easyui-tabs"  id="tabs" data-options="fit:true, border:false, plain:true">
+    </div>
+</div>
 
-    <!--定义右键节点时的弹出菜单-->
-    <div id="treeNodeMenu" class="easyui-menu" data-options="onClick:treeNodeMenuHandler">
-        <div data-options="iconCls:'icon-add'">添加</div>
-        <div data-options="iconCls:'icon-remove'">删除</div>
-        <div data-options="iconCls:'icon-remove'">刷新</div>
-    </div>
-  
+<!--定义右键节点时的弹出菜单-->
+<div id="treeNodeMenu" class="easyui-menu" data-options="onClick:treeNodeMenuHandler">
+    <div data-options="iconCls:'icon-add'">添加</div>
+    <div data-options="iconCls:'icon-remove'">删除</div>
+    <div data-options="iconCls:'icon-remove'">刷新</div>
+</div>
+
 </body>
 </html>

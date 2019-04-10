@@ -11,9 +11,9 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 """
 
 import os
+import sys
 
-# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # 项目根目录，以项目名命名的目录
 
 
 # Quick-start development settings - unsuitable for production
@@ -22,15 +22,16 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = '6)-lo1dn)%u@ycvh&nw0gr640=p3i+999z27uil0#*pfdu_#ir'
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# SECURITY WARNIrueNG: don't run with debug turned on in production!
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost','192.168.0.105']
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    'channels',
     'website.apps.WebsiteConfig',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -55,7 +56,7 @@ ROOT_URLCONF = 'AutotestPlatform.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates'), os.path.join(BASE_DIR, 'mysite/templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -70,6 +71,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'AutotestPlatform.wsgi.application'
 
+ASGI_APPLICATION = 'AutotestPlatform.routing.application'
 
 # Database
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
@@ -86,7 +88,7 @@ DATABASES = {
         'NAME': 'testplatform',
         'USER': 'testacc',
         'PASSWORD': 'test1234',
-        'HOST': '10.202.200.166',
+        'HOST': '192.168.0.103',
         'PORT': '3306',
         'OPTION':{
             'init_command': 'SET default_storage_engine=INNODB'
@@ -118,27 +120,26 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/1.11/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'zh-hans'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Shanghai'
 
 USE_I18N = True
 
 USE_L10N = True
 
-USE_TZ = True
+USE_TZ=False
 
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'static') 
+STATIC_ROOT = os.path.join(BASE_DIR, 'static') #
 
-TEMPLATE_DIRS = (
-    os.path.join(BASE_DIR,  'templates'), 
-)
+head, tail = os.path.split(__file__)
 
+log_filepath = os.path.normpath(os.path.join(head, '../log/log.log'))
 
 LOGGING = {
     'version': 1,
@@ -155,7 +156,7 @@ LOGGING = {
         'file': {
             'level':'WARNING',
             'class': 'logging.FileHandler',
-             'filename': './log/log.log',
+             'filename': log_filepath,
             'formatter':'verbose'
         },
         'console': {
@@ -170,3 +171,5 @@ LOGGING = {
         },
     },
 }
+
+WEB_DEBUG_LOG_LEVEL = 'debug' #web页面调试日志级别配置，可选值 debug info warn error critical，大小写不敏感

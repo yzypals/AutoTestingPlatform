@@ -23,6 +23,10 @@ def running_plan_manager(request):
     template = loader.get_template('website/pages/runningPlanManager.html')
     return HttpResponse(template.render({}, request))
 
+def debug_api_running_plan(request):
+    template = loader.get_template('website/pages/debugAPIRunningPlanView.html')
+    return HttpResponse(template.render({}, request))
+
 # # 运行计划列表数据
 def get_running_plans(request):
     grid_data = {"total": 0, "rows": []}
@@ -62,20 +66,16 @@ def get_running_plans(request):
 def add_running_plan(request):
     try:
         params = request.POST
-
-        running_plan_num = int(time.time())
+        running_plan_num = int(time.time()*1000000)
         running_plan_name = params['running_plan_name']
         project_type = params['project_type']
         project_id =  params['project_id']
         project_name = params['project_name']
-        # for item in plan_id[:]:
-        #     if type(item) == type('') and not item.isdigit():
-        #         plan_id.remove(item)
         plan_id = params['plan_id']
         plan_name = params['plan_name']
         script_dirpath = params['script_dirpath'].strip()
         python_path = params['python_path'].strip()
-        running_status = '未执行'
+        running_status = '暂未运行'
         valid_flag = params['valid_flag']
         order = params['order']
 
@@ -87,10 +87,11 @@ def add_running_plan(request):
             return  HttpResponse('保存失败，项目ID不能为空')
         if project_name == '':
             return  HttpResponse('保存失败，项目名称不能为空')
-        if not plan_id:
+        if plan_id == '':
             return  HttpResponse('保存失败，计划id不能为空')
         if plan_name == '':
             return  HttpResponse('保存失败，计划名称不能为空')
+
 
         script_dirpath = os.path.normpath(script_dirpath)
         python_path = os.path.normpath(python_path)
@@ -143,6 +144,18 @@ def update_running_plan(request):
         python_path = params['python_path']
         valid_flag = params['valid_flag']
 
+        if running_plan_name == '':
+            return  HttpResponse('保存失败，运行计划名称不能为空')
+        if project_type == '':
+            return  HttpResponse('保存失败，项目类型不能为空')
+        if project_id == '':
+            return  HttpResponse('保存失败，项目ID不能为空')
+        if project_name == '':
+            return  HttpResponse('保存失败，项目名称不能为空')
+        if plan_id == '':
+            return  HttpResponse('保存失败，计划id不能为空')
+        if plan_name == '':
+            return  HttpResponse('保存失败，计划名称不能为空')
         if valid_flag == '':
             return  HttpResponse('保存失败，是否启用不能为空')
 
@@ -164,21 +177,36 @@ def update_running_plan(request):
 
 def exec_running_plan(request):
     try:
-        params = request.POST
         params = request.body.decode('utf-8')
         params = json.loads(params)
 
         running_plan_num = params['runningPlanNum']
         script_dirpath = params['scriptDirpath']
         python_path = params['pythonPath']
+        project_type = params['projectType']
 
+        if script_dirpath == '':
+            return  HttpResponse('运行失败，运行脚本所在父级目录绝对路径不能为空')
+        elif not os.path.exists(script_dirpath):
+            logger.info(script_dirpath)
+            return  HttpResponse('运行失败，运行脚本所在父级路径不存在')
+        elif not os.path.isdir(script_dirpath):
+            return  HttpResponse('运行失败，自动化脚本所在父级路径不为目录')
+        else:
+            # logger.info('正在规范化路径')
+            script_dirpath = os.path.normpath(script_dirpath)
+        if not os.path.exists(python_path):
+            return  HttpResponse('运行失败，python.exe程序绝对路径不存在')
+        else:
+            # logger.info('正在规范化路径')
+            python_path = os.path.normpath(python_path)
         obj = Running_plan.objects.get(running_plan_num=running_plan_num)
-        if Running_plan.objects.filter(running_status = '执行中').exists():
-            return HttpResponse('当前还有任务未完成')
+        if Running_plan.objects.filter(running_status = '正在运行').filter(project_type=project_type).exists():
+            return HttpResponse('已有任务在运行')
         elif obj.valid_flag == '禁用':
-             return HttpResponse('运行计划已经被禁用')
+             return HttpResponse('该运行计划已经被禁用')
 
-        obj.running_status = '执行中'
+        obj.running_status = '正在运行'
         obj.remark = ''
         obj.save()
 
@@ -188,11 +216,11 @@ def exec_running_plan(request):
             if code:
                 logger.error('execute running plan fail')
                 # logger.error('执行计划出错')
-                obj.running_status = '执行失败'
+                obj.running_status = '运行失败'
                 obj.save()
             else:
                 # logger.info('执行成功')
-                obj.running_status = '执行成功'
+                obj.running_status = '运行成功'
                 obj.save()
         # 使用多线程取执行
         thread = threading.Thread(target=run_running_plan,
@@ -201,18 +229,23 @@ def exec_running_plan(request):
         return HttpResponse('正在执行程序，请稍后刷新页面查看结果')
     except Exception as e:
         obj = Running_plan.objects.get(running_plan_num=running_plan_num)
-        obj.running_status = '执行失败'
+        obj.running_status = '运行失败'
         obj.save()
         return HttpResponse('%s' % e)
 
-def reset_running_plan_status(request):
+def set_running_plan_status(request):
     try:
         params = request.POST
 
         running_plan_num = params['runningPlanNum']
+        task_status = params.get('taskStatus')
+        logger.info(task_status)
 
         obj = Running_plan.objects.get(running_plan_num=running_plan_num)
-        obj.running_status = '未执行'
+        if task_status:
+            obj.running_status = task_status
+        else:
+            obj.running_status = '暂未运行'
         obj.remark = ''
         obj.save()
         return HttpResponse('重置成功')

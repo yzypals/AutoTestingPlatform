@@ -11,10 +11,6 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
-import sys
-sys.path.append('E:\\autotest\\AutotestPlatform')
-sys.path.append('E:\\autotest\\AutotestPlatform\\AutotestPlatform')
-
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "AutotestPlatform.settings")
 
 application = get_wsgi_application()

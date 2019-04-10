@@ -97,7 +97,7 @@ class TestProject:
     def run(self, debug):
         try:
             if_plan_run_fail = False
-            plan_id_list_for_failure = [] # 存放执行失败、未执行的测试计划的ID
+            plan_id_list_for_failure = [] # 存放执行失败、未执行的测试计划的ID及原因简介
 
             logger.info('======================正在同步更新与待运行测试计划关联的所有用例树节点信息======================')
             result = self.sync_case_tree_node_info_for_testplans()
@@ -117,23 +117,21 @@ class TestProject:
                          test_plan = TestPlan(plan_id, plan_name, self.project_id, self.project_name, self.protocol, self.host, self.port, self.global_headers)
                          result = test_plan.run(debug)
                          if not result[0]:
-                             if_plan_run_fail = True
-                             plan_id_list_for_failure.append(plan_id)
+                             plan_id_list_for_failure.append('计划ID：%s，失败原因：%s   ' % (plan_id, result[1]))
                      else:
                          logger.warn('测试计划已被禁用，跳过执行')
-                         if_plan_run_fail = True
-                         plan_id_list_for_failure.append(plan_id)
+                         plan_id_list_for_failure.append('计划ID：%s，失败原因：%s   ' % (plan_id, msg))
                          continue
                  elif result[0] and not result[1]:
                      logger.warn('运行失败:未查询到计划相关信息')
-                     return [False, '运行失败:未查询到计划相关信息']
+                     plan_id_list_for_failure.append('计划ID：%s，失败原因：%s   ' % (plan_id, msg))
                  else:
-                     return [False, '运行失败：%s' % result[1]]
+                     plan_id_list_for_failure.append('计划ID：%s，失败原因：%s   ' % (plan_id, result[1]))
 
-            if if_plan_run_fail:
-                return [False, '测试计划%s运行失败' % str(plan_id_list_for_failure)]
+            if plan_id_list_for_failure:
+                return [False, '项目运行失败：%s' % ''.join(plan_id_list_for_failure)]
             else:
-                return [True, '']
+                return [True, '项目运行成功']
         except Exception as e:
             logger.error('%s' % e)
             return [False, '运行失败：%s' % e]

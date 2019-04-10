@@ -15,6 +15,8 @@ https://gitee.com/ishouke/AutoTestingPlatform/wikis/%E5%9F%BA%E4%BA%8Epython-Dja
 
 基于python+Djano+Easyui实现的UI自动化测试框架
 
+备注：支持Linux服务器部署及接口自动化在线运行
+
 #### 参与贡献
 
 1. Fork 本仓库

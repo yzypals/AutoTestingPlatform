@@ -44,6 +44,12 @@
             color:#416AA3; font-weight:bold;
         }
 
+	    /*去掉easyui tabs右侧滚动条*/
+        #tabs .tabs-panels>.panel>.panel-body {
+		    overflow: hidden;
+    	}
+
+
     </style>
 
                 
@@ -138,6 +144,28 @@
             }
             //为tab标签关联其它操作，比如双击关闭，右键操作等;
         }
+
+        // 关闭tab前增加该页面对应任务执行状态判断
+        $(function(){
+            $('#tabs').tabs({
+                onBeforeClose: function(title,index){
+                    if (title.indexOf('run-') != -1) {
+                        var target = this;
+                        var tab = $(target).tabs('getTab', index);
+                        var tabID = tab.panel('options').id;
+                        var taskStatus = document.getElementById('iframe-' +  tabID).contentWindow.taskStatus;
+                        if (taskStatus) {
+                            if ( taskStatus != 'taskEnd') {
+                                $.messager.alert('告警', '正在调试运行，请等待运行结束后再关闭!', 'warn')
+                                return false;
+                            }
+                        }
+                        return true;
+                    }
+                    return true;
+                }
+            });
+        });
     
     </script>
 

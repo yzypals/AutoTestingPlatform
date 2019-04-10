@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    {% load staticfiles %}
+    <!--引入JQuery-->
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery-3.2.1.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery.easyui.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/locale/easyui-lang-zh_CN.js' %}"></script>
+    <link rel="stylesheet" type="text/css" href="{% static  'website/jquery-easyui/themes/default/easyui.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'website/jquery-easyui/themes/icon.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'website/jquery-easyui/demo/demo.css' %}">
+
+    <script>
+
+        // 消息处理函数（暂时用不到）
+        function handle_message(e) {
+            var data = JSON.parse(e.data);
+            var message = data['message'];
+            if (message == 'restart') {
+                $('#LogContianer').empty();
+            } else {
+                $('#LogContianer').append('<br/>' + message);
+            }
+        }
+
+        // 创建WebSockt长连接
+        var logSocket = new WebSocket(
+                'ws://' + window.location.host +
+                '/ws/debugCaseOrSuit/log')
+
+        var id = undefined;
+        logSocket.onmessage = function(e) {
+            //    setTimeout(function() {
+            //        handle_message(e);
+            //    }, 0);
+            var data = JSON.parse(e.data);
+            var message = data['message'];
+            if (message == 'start') {
+                $('#LogContainer').empty();
+            } else {
+                if (message.search("WARN") != -1) {
+                    $("#LogContainer").append('<br/>' + message).css("color", "#FFA500");
+                } else if(message.search("ERROR") != -1 || message.search('CRITICAL') != -1)  {
+                    $("#LogContainer").append('<br/>' + message).css("color", "#FF0000");
+                } else {
+                    $("#LogContainer").append('<br/>' + message);
+                }
+            }
+
+
+        };
+
+        logSocket.onclose = function(e) {
+            console.error('socket closed unexpectedly');
+        };
+
+        // 给调试运行按钮绑定点击事件
+        $(function(){
+            $('#debugBtn').bind('click', function(){
+                var currentTab = window.parent.$('#tabs').tabs('getSelected');
+                var tabID = currentTab.panel('options').id;
+                var temp_array = tabID.split('-');
+                var nodeID = temp_array[2];
+                id = tabID;
+                var projectID = temp_array[1];
+
+                if(logSocket.readyState !=1 ){
+                    alert('Error，socket连接未打开，请重新打开当前tab页面后重试');
+                    return;
+                }
+
+                // 发送调试命令
+                logSocket.send(JSON.stringify({
+                    'task_type': 'debugCaseOrSuit',
+                    'message':'start',
+                    'node_id': nodeID,
+                    'project_id': projectID
+                }));
+            });
+        });
+
+        // 给停止调试按钮绑定点击事件
+        $(function(){
+            $('#stopDebugBtn').bind('click', function(){
+                var currentTab = window.parent.$('#tabs').tabs('getSelected');
+                var tabID = currentTab.panel('options').id;
+                var temp_array = tabID.split('-');
+                var nodeID = temp_array[2];
+                var projectID = temp_array[1];
+
+                if(logSocket.readyState !=1 ){
+                    alert('Error，socket连接未打开，请重新打开当前tab页面后重试');
+                    return;
+                }
+                // 发送调试命令
+                logSocket.send(JSON.stringify({
+                    'task_type': 'debugCaseOrSuit',
+                    'message':'stop',
+                    'node_id': nodeID,
+                    'project_id': projectID
+                }));
+            });
+        });
+
+        // 给清屏按钮绑定点击事件
+        $(function(){
+            $('#clearLogBtn').bind('click', function(){
+                $('#LogContainer').empty();
+            });
+        });
+    </script>
+
+
+
+</head>
+<body>
+<div style="position: fixed; background-color:white;" >
+    <a id="debugBtn" href="#" class="easyui-linkbutton" data-options="iconCls:'icon-add', toggle:true, group:'group1'">调试运行</a>
+    <a id="stopDebugBtn" href="#" class="easyui-linkbutton" data-options="iconCls:'icon-remove', toggle:true, group:'group1'">停止调试</a>
+    <a id="clearLogBtn" href="#" class="easyui-linkbutton" data-options="iconCls:'icon-remove', toggle:true, group:'group1'">清除日志</a>
+</div>
+
+<div id="LogContainer"  style="margin-top: 30px"></div>
+</body>
+</html>

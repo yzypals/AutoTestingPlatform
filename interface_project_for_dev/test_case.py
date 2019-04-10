@@ -4,6 +4,7 @@
 __author__ = 'shouke'
 
 import time
+import json
 
 from common.log import logger
 from common.globalvar import test_reporter
@@ -77,13 +78,21 @@ class TestCase:
                                 time.sleep(retry_frequency) # 频率
                                 retry += 1
                                 logger.error('执行测试用例步骤失败，正在进行第 %s 次重试（第 %s 步, 步骤ID: %s, 用例ID：%s, 用例名称：%s）======================' % (str(retry), order, step_id, self.case_id, self.case_name))
-                                result = test_case.run(debug)
+                                result = test_case.run(debug, True)
 
                             if not debug: # 不是调试运行，
                                 logger.info('======================正在记录测试用例步骤运行结果到测试报告-用例步骤执行明细表======================')
+                                request_header = '<xmp>%s</xmp>' % str(request_header)
+                                input_params = '<xmp>%s</xmp>' % str(input_params)
+                                output_params = '<xmp>%s</xmp>' % str(output_params)
+                                logger.info(type(check_pattern))
+                                # check_pattern = '<xmp>%s</xmp>' % json.dumps(check_pattern, ensure_ascii=False, indent=4)
+                                check_pattern = '<xmp>%s</xmp>' % str(check_pattern)
+
+                                remark = '<xmp>%s</xmp>' % result[2]
                                 data = (self.execution_num, self.plan_id, self.case_id, step_id, order, step_type, op_object, object_id, exec_operation,
-                                        protocol, host, port, request_header, request_method, url_or_sql, input_params,
-                                        response_to_check, check_rule, str(check_pattern), str(output_params), result[1], result[2], start_time, 0)
+                                        protocol, self.host, self.port, request_header, request_method, url_or_sql, input_params,
+                                        response_to_check, check_rule, check_pattern, output_params, result[1],remark, start_time, 0)
                                 test_reporter.insert_report_for_case_step(data)
                         else:
                             test_case_step = TestCaseStep(self.execution_num, self.plan_id, self.case_id, step_id, order, step_type, op_object, object_id, exec_operation, request_header, \
@@ -97,7 +106,7 @@ class TestCase:
                                 time.sleep(retry_frequency) # 频率
                                 retry += 1
                                 logger.error('执行用例测试步骤失败，正在进行第 %s 次重试（第 %s 步, 步骤ID: %s, 用例ID：%s, 用例名称：%s）' % (str(retry), order, step_id, self.case_id, self.case_name))
-                                result = test_case_step.run(debug)
+                                result = test_case_step.run(debug, True)
                             if not debug:
                                 logger.info('======================正在记录测试用例步骤运行结果到测试报告-用例步骤执行明细表======================')
                                 test_reporter.insert_report_for_case_step(result[3])

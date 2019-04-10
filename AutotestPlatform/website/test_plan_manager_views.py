@@ -124,6 +124,11 @@ def get_api_test_plans(request):
         logger.error('%s' % e)
         return HttpResponse('%s' % e)
 
+# 点击 在线调试 打开页面
+def debug_api_test_plan(request):
+    template = loader.get_template('website/pages/debugAPITestPlanView.html')
+    return HttpResponse(template.render({}, request))
+
 # 新增|编辑ui测试计划，请求运行环境（浏览器）
 def get_browsers_for_ui_test_plan(request):
     choice_list = []

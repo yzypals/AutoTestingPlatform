@@ -8,6 +8,7 @@ insert into `website_navigation` (`id`, `menu_name`, `parent_id`, `url`, `icon`,
 insert into `website_navigation` (`id`, `menu_name`, `parent_id`, `url`, `icon`, `order`) values('20','项目管理','0','','icon-sys-set','20');
 insert into `website_navigation` (`id`, `menu_name`, `parent_id`, `url`, `icon`, `order`) values('21','UI项目配置','20','/pages/UIProjectSetting.html','icon-set','1');
 insert into `website_navigation` (`id`, `menu_name`, `parent_id`, `url`, `icon`, `order`) values('22','API项目配置','20','/pages/APIProjectSetting.html','icon-set','2');
+insert into `website_navigation` (`id`, `menu_name`, `parent_id`, `url`, `icon`, `order`) values('23','测试项目配置','20','/pages/TestProjectSetting.html','icon-set','3');
 insert into `website_navigation` (`id`, `menu_name`, `parent_id`, `url`, `icon`, `order`) values('40','系统配置','0','','icon-sys-set','40');
 insert into `website_navigation` (`id`, `menu_name`, `parent_id`, `url`, `icon`, `order`) values('41','环境配置','40','/pages/envSetting.html','icon-set','1');
 insert into `website_navigation` (`id`, `menu_name`, `parent_id`, `url`, `icon`, `order`) values('42','浏览器配置','40','/pages/browserSetting.html','icon-set','1');
@@ -154,7 +155,7 @@ DELIMITER ;
 
 
 
-# 删除UI项目配置时，如果数据库配置表|全局变量配置表|运行计划表引用了该项目，则不让删除
+# 删除UI项目配置时，如果数据库配置表|全局变量配置表|运行计划表引用了该项目，则不让删除，否则所选项目表中对应的记录
 DROP TRIGGER IF EXISTS trigger_on_ui_project_setting_delete;
 DELIMITER //
 CREATE TRIGGER trigger_on_ui_project_setting_delete 
@@ -178,7 +179,7 @@ END;
 //
 DELIMITER ;
 
-# 删除API项目配置时，如果数据库配置表|全局变量配置表|运行计划表引用了该项目，则不让删除
+# 删除API项目配置时，如果数据库配置表|全局变量配置表|运行计划表引用了该项目，则不让删除，否则所选项目表中对应的记录
 DROP TRIGGER IF EXISTS trigger_on_api_project_setting_delete;
 DELIMITER //
 CREATE TRIGGER trigger_on_api_project_setting_delete 
@@ -202,6 +203,17 @@ END;
 //
 DELIMITER ;
 
+# 删除测试项目配置时，级联删除所选项目表
+DROP TRIGGER IF EXISTS trigger_on_api_project_setting_delete;
+DELIMITER //
+CREATE TRIGGER trigger_on_api_project_setting_delete 
+BEFORE DELETE ON `website_api_project_setting`
+FOR EACH ROW
+BEGIN
+   DELETE FROM `website_project_chosen` WHERE tree_type = 'SprintTree' AND project_id = old.id;   
+END;
+//
+DELIMITER ;
 
 # 删除数据库配置时，如果用例详情表即用例步骤引用了该数据库配置，则不让删除
 DROP TRIGGER IF EXISTS trigger_on_database_setting_delete;

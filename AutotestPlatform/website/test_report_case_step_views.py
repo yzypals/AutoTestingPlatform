@@ -56,9 +56,6 @@ def get_test_report_case_steps(request):
 
     objs = page.object_list
     for obj in objs:
-        obj['input_params'] = '<xmp>' + obj['input_params'] + '</xmp>'
-        obj['check_pattern'] = '<xmp>' + obj['check_pattern'] + '</xmp>'
-        obj['remark'] = '<xmp>' + obj['remark'] + '</xmp>'
         rows.append(obj)
     griddata["rows"] =  rows
     griddata = json.dumps(griddata)

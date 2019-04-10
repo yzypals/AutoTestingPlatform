@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    {% load staticfiles %}
+    <!--引入JQuery-->
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery-3.2.1.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery.easyui.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/jquery.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'website/js/common.js' %}"></script>
+    <script type="text/javascript" src="{% static 'website/jquery-easyui/locale/easyui-lang-zh_CN.js' %}"></script>
+    <link rel="stylesheet" type="text/css" href="{% static  'website/jquery-easyui/themes/default/easyui.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'website/jquery-easyui/themes/icon.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'website/jquery-easyui/demo/demo.css' %}">
+
+    <script type="text/javascript">
+        var taskStatus = undefined; // 标记任务状态
+        var running_plan_num = undefined; // 运行计划编码
+
+        // 创建WebSockt长连接
+        var logSocket = new WebSocket('ws://' + window.location.hostname + ':' + daphneListenPort + '/ws/debugAPICaseOrSuit/')
+
+        logSocket.onmessage = function(e) {
+            var data = JSON.parse(e.data);
+            var message = data['message'];
+            if (message == 'clearLog') {
+                $('#LogContainer').empty();
+            }
+            else if (message == 'taskBegin') {
+                taskStatus = 'taskBegin';
+                $.post('/action/setRunningPlanStatus', {runningPlanNum:running_plan_num, taskStatus:'正在运行'},
+                        function(data, status) {
+                            if (data != '重置成功') {
+                                alert( '更新运行计划运行状态失败!')
+                            }
+                        }
+                );
+            }
+            else {
+                $("#LogContainer").append(message);
+                taskStatus = message;
+                if (taskStatus == 'taskEnd') {
+                    window.parent.$('#Running_plan').datagrid('reload');
+                }
+            }
+        };
+
+        logSocket.onclose = function(e) {
+            console.error('socket closed unexpectedly');
+        };
+
+        // 给在线运行按钮绑定点击事件
+        $(function(){
+            $('#runBtn').bind('click', function(){
+                var currentTab = window.parent.$('#tabs').tabs('getSelected');
+                running_plan_num = currentTab.panel('options').id;
+
+                if(logSocket.readyState !=1 ){
+                    alert('Error，socket连接未打开，请重新打开当前tab页面后重试');
+                    return;
+                }
+
+                // 发送调试命令
+                logSocket.send(JSON.stringify({
+                    'task_type': 'runAPIRunningPlan',
+                    'message':'taskBegin',
+                    'node_id': '',
+                    'project_id': '',
+                    'plan_id':'',
+                    'running_plan_no':running_plan_num
+                }));
+            });
+        });
+
+        // 给调试运行按钮绑定点击事件
+        $(function(){
+            $('#debugBtn').bind('click', function(){
+                var currentTab = window.parent.$('#tabs').tabs('getSelected');
+                var running_plan_num = currentTab.panel('options').id;
+
+                if(logSocket.readyState !=1 ){
+                    alert('Error，socket连接未打开，请重新打开当前tab页面后重试');
+                    return;
+                }
+
+                // 发送调试命令
+                logSocket.send(JSON.stringify({
+                    'task_type': 'debugAPIRunningPlan',
+                    'message':'taskBegin',
+                    'node_id': '',
+                    'project_id': '',
+                    'plan_id':'',
+                    'running_plan_no':running_plan_num
+                }));
+            });
+        });
+
+
+        // 给清屏按钮绑定点击事件
+        $(function(){
+            $('#clearLogBtn').bind('click', function(){
+                $('#LogContainer').empty();
+            });
+        });
+
+    </script>
+
+</head>
+<body>
+<div style="position: fixed; background-color:white;" >
+    <a id="runBtn" href="#" class="easyui-linkbutton" data-options="iconCls:'icon-add', toggle:true, group:'group1'">在线运行</a>
+    <a id="debugBtn" href="#" class="easyui-linkbutton" data-options="iconCls:'icon-add', toggle:true, group:'group1'">调试运行</a>
+    <a id="clearLogBtn" href="#" class="easyui-linkbutton" data-options="iconCls:'icon-remove', toggle:true, group:'group1'">清除日志</a>
+</div>
+
+<div id="LogContainer"  style="margin-top: 40px"></div>
+</body>
+</html>

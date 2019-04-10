@@ -31,6 +31,9 @@
         function onBeforeLoad(param){
             // 获取当前页面所在父页面(tab页)的ID
             var currentTab = window.parent.$('#tabs').tabs('getSelected');
+            //var tabTitle = currentTab.panel('options').title;
+            //var array = tabTitle.split('-');
+            //var planID = array[1];
             var planID = currentTab.panel('options').id;
             $('#API_case_tree_test_plan').datagrid('options').url = '/action/loadTestPlanCases?planType=APITestPlan&planID=' + planID;
         }

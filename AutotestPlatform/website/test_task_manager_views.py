@@ -148,37 +148,46 @@ def add_test_overview_task(request):
         mark = params['mark']
         order =  params['order']
         page_id = params['node_id']
-    except Exception as e:
-        logger.error('%s' % e)
-        return  HttpResponse('%s' % e)
 
-    if progress and progress.isdigit():
-        progress = progress + '%'
-    else:
-        progress = '未完成'
 
-    if requirement == '':
-        # logger.error('保存失败，需求名称不能为空')
-        return HttpResponse('保存失败，需求名称不能为空')
-
-    if order == '': # 如果无顺序，表明是新增
-        all_objects = Test_task_overview.objects.filter(page_id=page_id)
-        if all_objects.exists():
-            max_order = all_objects.aggregate(Max('order'))['order__max']
-            order = max_order + 1
+        if progress and progress.isdigit():
+            progress = progress + '%'
         else:
-            order = 1
-    else: #表明是插入
-        # logger.info('即将插入新记录，正在调整记录的顺序')
-        all_objects = Test_task_overview.objects.filter(page_id=page_id).filter(order__gte=order)
-        for object in all_objects:
-            object.order = object.order + 1
-            object.save()
+            progress = '未完成'
 
-    test_task_obj = Test_task_overview(module=module, progress=progress, requirement=requirement, sub_task=sub_task, time_for_test=time_for_test,
-                              real_time_for_test=real_time_for_test, developer_in_charge=developer_in_charge,tester_in_charge=tester_in_charge,
-                              pm_in_charge=pm_in_charge, mark=mark, order=order, page_id=page_id)
-    try:
+        if time_for_test:
+            real_time_for_test = real_time_for_test.split(' ')[0]
+            real_time_for_test = time.mktime(datetime.strptime(real_time_for_test, '%Y-%m-%d').timetuple())
+        if real_time_for_test:
+            real_time_for_test = real_time_for_test.split(' ')[0]
+            real_time_for_test = time.mktime(datetime.strptime(real_time_for_test, '%Y-%m-%d').timetuple())
+        if time_for_test < real_time_for_test:
+            if_delay  = '是'
+        else:
+            if_delay = '否'
+
+        if requirement == '':
+            # logger.error('保存失败，需求名称不能为空')
+            return HttpResponse('保存失败，需求名称不能为空')
+
+        if order == '': # 如果无顺序，表明是新增
+            all_objects = Test_task_overview.objects.filter(page_id=page_id)
+            if all_objects.exists():
+                max_order = all_objects.aggregate(Max('order'))['order__max']
+                order = max_order + 1
+            else:
+                order = 1
+        else: #表明是插入
+            # logger.info('即将插入新记录，正在调整记录的顺序')
+            all_objects = Test_task_overview.objects.filter(page_id=page_id).filter(order__gte=order)
+            for object in all_objects:
+                object.order = object.order + 1
+                object.save()
+
+        test_task_obj = Test_task_overview(module=module, progress=progress, requirement=requirement, sub_task=sub_task, time_for_test=time_for_test,
+                                  real_time_for_test=real_time_for_test, developer_in_charge=developer_in_charge,tester_in_charge=tester_in_charge,
+                                  pm_in_charge=pm_in_charge, mark=mark, order=order, page_id=page_id,if_delay=if_delay)
+
         # logger.info('同步更新有相同需求任务行的模块名称，进度')
         all_objects = Test_task_overview.objects.filter(page_id=page_id).filter(requirement=requirement)
         for item in all_objects:
@@ -236,9 +245,9 @@ def update_test_detail_task(request):
             progress = progress + '%'
 
         if progress == '100%':
-            finish_time = time.strftime('%m/%d/%Y %H:%M:%S',time.localtime(time.time()))
-            milliseconds_for_deadline = time.mktime(datetime.strptime(deadline.split(' ')[0], '%m/%d/%Y').timetuple())
-            milliseconds_for_finish_time = time.mktime(datetime.strptime(finish_time.split(' ')[0], '%m/%d/%Y').timetuple())
+            finish_time = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
+            milliseconds_for_deadline = time.mktime(datetime.strptime(deadline.split(' ')[0], '%Y-%m-%d').timetuple())
+            milliseconds_for_finish_time = time.mktime(datetime.strptime(finish_time.split(' ')[0], '%Y-%m-%d').timetuple())
             if milliseconds_for_finish_time <= milliseconds_for_deadline:
                 if_delay = '否'
             else:
@@ -343,9 +352,9 @@ def update_test_overview_task(request):
 
         if time_for_test and real_time_for_test:
             time_for_test = time_for_test.split(' ')[0]
-            time_for_test = time.mktime(datetime.strptime(time_for_test, '%m/%d/%Y').timetuple())
+            time_for_test = time.mktime(datetime.strptime(time_for_test, '%Y-%m-%d').timetuple())
             real_time_for_test = real_time_for_test.split(' ')[0]
-            real_time_for_test = time.mktime(datetime.strptime(real_time_for_test, '%m/%d/%Y').timetuple())
+            real_time_for_test = time.mktime(datetime.strptime(real_time_for_test, '%Y-%m-%d').timetuple())
             if time_for_test < real_time_for_test:
                 test_task_obj.if_delay  = '是'
             else:

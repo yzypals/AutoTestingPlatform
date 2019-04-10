@@ -9,6 +9,10 @@ import urllib.parse
 import ssl
 import configparser
 import gzip
+import os
+import sys
+import platform
+
 from io import BytesIO
 
 from common.log import logger
@@ -18,17 +22,26 @@ from common.log import logger
 cj = http.cookiejar.CookieJar()
 cookie_handler = urllib.request.HTTPCookieProcessor(cj)
 
+
 config = configparser.ConfigParser()
+co_filepath = sys._getframe().f_code.co_filename
+head, tail = os.path.split(co_filepath)
+conf_filepath = os.path.join(head, 'conf/https.conf')
 
 # 从配置文件中读取SSL协议版本
-config.read('./conf/https.conf', encoding='utf-8')
+config.read(conf_filepath, encoding='utf-8')
+
+pyversion = platform.python_version()
 
 # 添加ssl支持 # 注意，发起的请求要为443端口
 ssl_or_tls_protocol = config['HTTPS']['SSL_OR_TLS_PROTOCOL'].lower()
 if ssl_or_tls_protocol == 'v1':
     https_handler = urllib.request.HTTPSHandler(context=ssl.SSLContext(ssl.PROTOCOL_TLSv1))
 elif ssl_or_tls_protocol == 'v2':
-    https_handler = urllib.request.HTTPSHandler(context=ssl.SSLContext(ssl.PROTOCOL_SSLv2))
+    if pyversion >= '3.5.3':
+        https_handler = urllib.request.HTTPSHandler(context=ssl.SSLContext(ssl.PROTOCOL_TLS))
+    else:
+        https_handler = urllib.request.HTTPSHandler(context=ssl.SSLContext(ssl.PROTOCOL_SSLv2))
 elif ssl_or_tls_protocol == 'v23':
     https_handler = urllib.request.HTTPSHandler(context=ssl.SSLContext(ssl.PROTOCOL_SSLv23))
 elif ssl_or_tls_protocol == 'v3':

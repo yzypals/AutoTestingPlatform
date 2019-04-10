@@ -6,6 +6,7 @@ __author__ = 'shouke'
 import  unittest
 import json
 import re
+import copy
 import xml.etree.ElementTree as ET
 
 from common.log import logger
@@ -30,6 +31,7 @@ class MyUnittestTestCase(unittest.TestCase):
 
     # 断言
     def assert_result(self, response_to_check):
+        check_pattern = copy.deepcopy(self.check_pattern)
         if type(self.check_pattern) == type(''): # 如果是字符串，说明是第一次运行，否则说明非第一次运行，比如失败后重试，或者循环执行
             if self.check_pattern:
                 logger.info('正在替换“校验模式”中的动态参数')

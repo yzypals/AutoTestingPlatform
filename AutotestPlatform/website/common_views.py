@@ -8,6 +8,7 @@ from django.db.models import Max
 from django.db.models import Min
 from django.db.models import F
 from django.core import serializers
+from django.template import loader
 
 from website.models import Sprint_tree
 from website.models import Project_chosen
@@ -456,7 +457,7 @@ def copy_tree_leaf_node(request):
 
                     ui_case_step_obj = UI_test_case_step(order=step_order, status=status, object_type= object_type,object=object, exec_operation=exec_operation,
                                             input_params=input_params, output_params=output_params, assert_type=assert_type, assert_pattern=assert_pattern,
-                                            run_times=run_times,try_for_failure=try_for_failure,page_name=page_name,case_id=case_id, object_id=object_id)
+                                            run_times=run_times,try_for_failure=try_for_failure, page_name=page_name,case_id=case_id, object_id=object_id)
                     ui_case_step_obj.save()
         elif tree_type == 'APICaseTree':
             sub_nodes = API_case_tree.objects.filter(project_id=project_id).filter(parent_id=node_parent_id)
@@ -738,3 +739,5 @@ def drag_row_of_testcase_step(request):
         return HttpResponse('success')
     except Exception as e:
         return HttpResponse('%s' % e)
+
+
