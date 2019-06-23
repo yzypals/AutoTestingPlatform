@@ -239,8 +239,10 @@
                 hideNoneEditBtn(editIndex);  
                 $('#API_project_setting').datagrid('unselectAll');               
                 var row = $('#API_project_setting').datagrid('selectRow', editIndex);
-                $(row).datagrid('beginEdit', editIndex);
 
+
+                $(row).datagrid('beginEdit', editIndex);
+                rowsSelected = $('#API_project_setting').datagrid('getSelections');
                 var envIDList = rowsSelected[0].environment_id.toString().split(',');
                 initDataForRowComponets('修改', envIDList);
                 ifInsert = false;              

@@ -171,8 +171,8 @@ class APIUnittestTestCase(MyUnittestTestCase):
         elif method == 'get':
             msg = '正在发起GET请求...'
             logger.info(msg)
-            logger.info(msg)
             self.log_websocket_consumer.info(msg)
+            self.input_params = json.loads(self.input_params)
             self.input_params = urllib.parse.urlencode(self.input_params)
             response = self.http.get(self.url_or_sql, self.input_params)
 

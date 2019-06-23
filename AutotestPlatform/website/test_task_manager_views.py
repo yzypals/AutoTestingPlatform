@@ -156,12 +156,12 @@ def add_test_overview_task(request):
             progress = '未完成'
 
         if time_for_test:
-            real_time_for_test = real_time_for_test.split(' ')[0]
-            real_time_for_test = time.mktime(datetime.strptime(real_time_for_test, '%Y-%m-%d').timetuple())
+            time_for_test_bak = time_for_test.split(' ')[0]
+            time_for_test_bak = time.mktime(datetime.strptime(time_for_test_bak, '%Y-%m-%d').timetuple())
         if real_time_for_test:
-            real_time_for_test = real_time_for_test.split(' ')[0]
-            real_time_for_test = time.mktime(datetime.strptime(real_time_for_test, '%Y-%m-%d').timetuple())
-        if time_for_test < real_time_for_test:
+            real_time_for_test_bak = real_time_for_test.split(' ')[0]
+            real_time_for_test_bak = time.mktime(datetime.strptime(real_time_for_test_bak, '%Y-%m-%d').timetuple())
+        if time_for_test_bak < real_time_for_test_bak:
             if_delay  = '是'
         else:
             if_delay = '否'

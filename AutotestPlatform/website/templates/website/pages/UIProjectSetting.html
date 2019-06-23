@@ -225,6 +225,7 @@
                 var row = $('#UI_project_setting').datagrid('selectRow', editIndex);
                 $(row).datagrid('beginEdit', editIndex);
 
+                rowsSelected = $('#UI_project_setting').datagrid('getSelections');
                 var envIDList = rowsSelected[0].environment_id.toString().split(',');
                 initDataForRowComponets('修改', envIDList);
                 ifInsert = false;
