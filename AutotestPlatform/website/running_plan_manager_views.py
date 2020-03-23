@@ -211,7 +211,11 @@ def exec_running_plan(request):
         obj.save()
 
         def run_running_plan():
-            args = 'cd /d '+ script_dirpath + '&' + '"'+ python_path + '" main.py ' + 'rop ' + str(running_plan_num)
+            osname = os.name
+            if osname == "nt":
+                args = 'cd '+ script_dirpath + '&' + '"'+ python_path + '" main.py ' + 'rop ' + str(running_plan_num)
+            else:
+                args = 'cd '+ script_dirpath + '&&' + '"'+ python_path + '" main.py ' + 'rop ' + str(running_plan_num)
             code = os.system(args)
             if code:
                 logger.error('execute running plan fail')
